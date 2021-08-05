@@ -1,0 +1,20 @@
+#!/usr/bin/python3
+import argparse
+
+
+def run(src, dest):
+    pass
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Convert an hls4ml project to '
+                                     'its Catapult equivalent.')
+    parser.add_argument('src', metavar='SOURCE',
+                        type=str, help='the path to an hls4ml project directory')
+    parser.add_argument('dest', metavar='DESTINATION',
+                        type=str, help='the path to a directory where the '
+                        'Catapult project should be exported to (the directory '
+                        'will be created if it does not exist)')
+
+    args = parser.parse_args()
+    run(args.src, args.dest)
