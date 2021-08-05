@@ -1,0 +1,82 @@
+#!/usr/bin/python3
+import subprocess
+import os
+import sys
+import re
+from datetime import datetime
+
+if __name__ == "__main__":
+    os.chdir(os.path.join(os.sep, 'home', 'mgraczyk', 'Desktop', 'Catapult'))
+
+    if len(sys.argv) > 1:
+        if sys.argv[1] == 'no_test':
+            do_test = False
+            if len(sys.argv) > 2:
+                nums = map(int, sys.argv[2:])
+            else:
+                nums = range(0, 12 + 1)
+        else:
+            do_test = True
+            nums = map(int, sys.argv[1:])
+    else:
+        do_test = True
+        nums = range(0, 12 + 1)
+
+    if not os.path.exists('compile_logs'):
+        os.makedirs('compile_logs')
+    else:
+        for entry in os.listdir('compile_logs'):
+            os.remove(os.path.join('compile_logs', entry))
+
+    errors = False
+
+    for i in nums:
+        name = f'Dense{i}' if i > 0 else 'EntireTemplate'
+        test = 1 if do_test and i > 0 else 0
+
+        print(f'{name}... ', end='', flush=True)
+
+        filename = None
+
+        for cur_filename in os.listdir(os.path.join('projects', name)):
+            if cur_filename.endswith('.ccs'):
+                filename = cur_filename
+                break
+
+        if filename is None:
+            filename = name + '.ccs'
+
+        proc = subprocess.run(['singularity', 'exec',
+                               '--env',
+                               f'TCL_PROJECT_NAME={name}',
+                               '--env',
+                               f'TCL_PROJECT_PATH={name}/{filename}',
+                               '--env',
+                               f'TEST={test}',
+                               'bin/catapult.sif',
+                               'catapult', '-shell', '-file', 'bin/compile.tcl'],
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.STDOUT,
+                              encoding='utf-8')
+
+        with open(os.path.join('compile_logs', name + '.log'), 'w') as log_file:
+            log_file.write(proc.stdout)
+
+        if proc.returncode == 0:
+            if re.search('Error:.*make', proc.stdout) is not None:
+                errors = True
+                print('TEST FAIL')
+            else:
+                print('OK')
+        else:
+            errors = True
+            print('COMPILE FAIL')
+
+    print()
+
+    if errors:
+        print('ERROR: Some models failed testing or could not be compiled!')
+    else:
+        print('SUCCESS: All models could be compiled along with passing testing where applicable!')
+
+    print(f'See log files in "compile_logs" for more details.')
