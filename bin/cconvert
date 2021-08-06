@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import argparse
 import shutil
+import re
 from pathlib import Path
 
 
@@ -16,48 +17,126 @@ def print_msg(msg):
     print(f'{PROG_NAME}: {msg}')
 
 
-def copy_files(src_path, dest_path):
-    try:
-        FIRMWARE_PATH = src_path / Path('firmware')
-        FILES = [
-            (FIRMWARE_PATH / 'myproject.cpp', ''),
-            (FIRMWARE_PATH / 'myproject.h', ''),
-            (FIRMWARE_PATH / 'defines.h', ''),
-            (FIRMWARE_PATH / 'parameters.h', ''),
-            (FIRMWARE_PATH / 'weights', 'weights'),
-            (src_path / 'tb_data', 'tb_data'),
-        ]
+def get_string_from_file(path):
+    with path.open() as f:
+        string = ''
+        for line in f:
+            string += line
 
-        for path, dest_dir in FILES:
-            if path.is_dir():
-                shutil.copytree(path, dest_path / dest_dir)
-            else:
-                shutil.copy2(path, dest_path / dest_dir)
-    except Exception as ex:
-        shutil.rmtree(dest_path, ignore_errors=True)
-        raise ex
+    return string
+
+
+def save(string, path):
+    with path.open(mode='w') as f:
+        f.write(string)
+    
+
+def replace(string, pattern, repl):
+    return re.sub(pattern, repl, string, flags=re.DOTALL)
+
+
+def copy_files(src_path, dest_path):
+    FIRMWARE_PATH = src_path / Path('firmware')
+    FILES = [
+        (FIRMWARE_PATH / 'myproject.cpp', ''),
+        (FIRMWARE_PATH / 'myproject.h', ''),
+        (FIRMWARE_PATH / 'defines.h', ''),
+        (FIRMWARE_PATH / 'parameters.h', ''),
+        (FIRMWARE_PATH / 'weights', 'weights'),
+        (src_path / 'tb_data', 'tb_data'),
+    ]
+
+    for path, dest_dir in FILES:
+        if path.is_dir():
+            shutil.copytree(path, dest_path / dest_dir)
+        else:
+            shutil.copy2(path, dest_path / dest_dir)
+
+
+def replace_vivado(dest_path):
+    # Process myproject.cpp
+    myproject_path = dest_path / 'myproject.cpp'
+    myproject = get_string_from_file(myproject_path)
+    myproject = replace(myproject, r'#pragma', '//#pragma')
+    save(myproject, myproject_path)
+
+    # Process myproject.h
+    myproject_h_path = dest_path / 'myproject.h'
+    myproject_h = get_string_from_file(myproject_h_path)
+    myproject_h = replace(myproject_h, r'ap_(.*?)\.h', r'ac_\1.h')
+    save(myproject_h, myproject_h_path)
+
+    # Process defines.h
+    defines_path = dest_path / 'defines.h'
+    defines = get_string_from_file(defines_path)
+    defines = replace(defines, r'ap_(.*?)\.h', r'ac_\1.h')
+    defines = replace(defines, r'ap_fixed<(\d+[, ]+\d+)(.*?)>',
+                      r'ac_fixed<\1,true\2>')
+    defines = replace(defines, r'ap_ufixed<(\d+[, ]+\d+)(.*?)>',
+                      r'ac_fixed<\1,false\2>')
+    defines = replace(defines, r'ap_int<(\d+)(.*?)>', r'ac_int<\1,true\2>')
+    defines = replace(defines, r'ap_uint<(\d+)(.*?)>', r'ac_int<\1,false\2>')
+    defines = replace(defines, r'AP_', 'AC_')
+    save(defines, defines_path)
+
+    # Process parameters.h
+    parameters_path = dest_path / 'parameters.h'
+    parameters = get_string_from_file(parameters_path)
+    parameters = replace(parameters, r'ap_(.*?)\.h', r'ac_\1.h')
+    parameters = replace(parameters, r'ap_fixed<(\d+[, ]+\d+)(.*?)>',
+                         r'ac_fixed<\1,true\2>')
+    parameters = replace(parameters, r'ap_ufixed<(\d+[, ]+\d+)(.*?)>',
+                         r'ac_fixed<\1,false\2>')
+    parameters = replace(parameters, r'ap_int<(\d+)(.*?)>',
+                         r'ac_int<\1,true\2>')
+    parameters = replace(parameters, r'ap_uint<(\d+)(.*?)>',
+                         r'ac_int<\1,false\2>')
+    parameters = replace(parameters, r'AP_', 'AC_')
+    save(parameters, parameters_path)
+
+
+def generate_test_data(dest_path):
+    pass
+
+
+def generate_exp_table(dest_path):
+    pass
+
+
+def generate_invert_table(dest_path):
+    pass
 
 
 def run(src, dest):
     src_path = Path(src)
     dest_path = Path(dest)
 
-    if not src_path.exists():
-        error('the source directory does not exist')
+    try:
+        if not src_path.exists():
+            error('the source directory does not exist')
 
-    if not dest_path.exists():
-        dest_path.mkdir(parents=True)
+        if not dest_path.exists():
+            dest_path.mkdir(parents=True)
 
-    # Step 1: Copy the files
-    copy_files(src_path, dest_path)
+        # Step 1: Copy the files
+        copy_files(src_path, dest_path)
 
-    # Step 2: Replace Vivado-specific parts with Catapult ones
+        # Step 2: Replace Vivado-specific parts with Catapult ones
+        replace_vivado(dest_path)
 
-    # Step 3: Generate exp_table.h and invert_table.h
-
-    # Done!
-    print_msg('the specified hls4ml Vivado HLS project has been converted '
-              'successfully!')
+        # Step 3: Generate test data
+        generate_test_data(dest_path)
+    
+        # Step 4: Generate exp_table.h and invert_table.h
+        generate_exp_table(dest_path)
+        generate_invert_table(dest_path)
+    
+        # Done!
+        print_msg('the specified hls4ml Vivado HLS project has been converted '
+                  'successfully!')
+    except Exception as ex:
+        shutil.rmtree(dest_path, ignore_errors=True)
+        raise ex
 
 
 if __name__ == '__main__':
