@@ -2,6 +2,7 @@
 import argparse
 import shutil
 import re
+import random
 from pathlib import Path
 
 
@@ -43,11 +44,13 @@ def copy_files(src_path, dest_path):
         (FIRMWARE_PATH / 'defines.h', ''),
         (FIRMWARE_PATH / 'parameters.h', ''),
         (FIRMWARE_PATH / 'weights', 'weights'),
-        (src_path / 'tb_data', 'tb_data'),
+        (None, 'tb_data'),
     ]
 
     for path, dest_dir in FILES:
-        if path.is_dir():
+        if path is None:
+            (dest_path / dest_dir).mkdir()
+        elif path.is_dir():
             shutil.copytree(path, dest_path / dest_dir)
         else:
             shutil.copy2(path, dest_path / dest_dir)
@@ -95,8 +98,58 @@ def replace_vivado(dest_path):
     save(parameters, parameters_path)
 
 
-def generate_test_data(dest_path):
-    pass
+def generate_test_data(src_path, dest_path):
+    # Obtain network input and output types
+    test_path = src_path / 'myproject_test.cpp'
+    test = get_string_from_file(test_path)
+    regex_match = re.search(r'(\S+) .+;\s*nnet::copy_data.+;\s*(\S+) .+;', test)
+
+    input_type = regex_match.group(1)
+    output_type = regex_match.group(2)
+
+    # Obtain the number of network inputs and outputs + the input bit width
+    defines_path = src_path / 'firmware' / 'defines.h'
+    defines = get_string_from_file(defines_path)
+    regex_results = re.findall(r'#define N_.+? (\d+)', defines)
+    
+    input_num = int(regex_results[0])
+    output_num = int(regex_results[-1])
+
+    regex_match = re.search(r'typedef ap_.+<(\d+).*> ' + input_type + ';',
+                            defines)
+    input_bits = int(regex_match.group(1))
+    
+    # Generate input data
+    input_path = dest_path / 'tb_data' / 'tb_input_features.dat'
+    with input_path.open(mode='w') as inputs:
+        sets = 20
+    
+        for _ in range(sets):
+            input_list = []
+    
+            for _ in range(input_num):
+                bits = input_bits
+                ints = []
+
+                while bits > 0:
+                    ints = [random.getrandbits(min(bits, 32))] + ints
+                    bits -= 32
+        
+                input_list.append(' '.join(map(str, ints)))
+
+            inputs.write(';'.join(input_list) + '\n')
+
+    # Generate expected data
+    test_template_path = \
+        Path(__file__).parent.parent / 'templates' / 'myproject_test.cpp'
+    test_template = get_string_from_file(test_template_path)
+    test_template = test_template.replace('{{N_INPUT}}', str(input_num))
+    test_template = test_template.replace('{{N_OUTPUT}}', str(output_num))
+    test_template = test_template.replace('{{INPUT_TYPE}}', input_type)
+    test_template = test_template.replace('{{OUTPUT_TYPE}}', output_type)
+
+    old_test_path = test_path.rename(src_path / 'myproject_test.cpp.old')
+    save(test_template, test_path)
 
 
 def generate_exp_table(dest_path):
@@ -125,7 +178,7 @@ def run(src, dest):
         replace_vivado(dest_path)
 
         # Step 3: Generate test data
-        generate_test_data(dest_path)
+        generate_test_data(src_path, dest_path)
     
         # Step 4: Generate exp_table.h and invert_table.h
         generate_exp_table(dest_path)
