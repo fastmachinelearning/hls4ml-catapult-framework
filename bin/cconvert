@@ -150,7 +150,7 @@ def generate_test_data(src_path, dest_path):
     expected_path_src.unlink(missing_ok=True)
     
     test_template_path = \
-        Path(__file__).parent.parent / 'templates' / 'myproject_test.cpp'
+        Path(__file__).parent.parent / 'templates' / 'myproject_test_vivado.cpp'
     test_template = get_string_from_file(test_template_path)
     test_template = test_template.replace('{{N_INPUT}}', input_num_name)
     test_template = test_template.replace('{{N_OUTPUT}}', output_num_name)
