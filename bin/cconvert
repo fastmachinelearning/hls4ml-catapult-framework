@@ -208,6 +208,30 @@ def generate_invert_table(dest_path):
     pass
 
 
+def generate_sigmoid_table(dest_path):
+    pass
+
+
+def generate_tanh_table(dest_path):
+    pass
+
+
+def generate_softplus_table(dest_path):
+    pass
+
+
+def generate_softsign_table(dest_path):
+    pass
+
+
+def generate_elu_table(dest_path):
+    pass
+
+
+def generate_selu_table(dest_path):
+    pass
+
+
 def run(src, dest, force):
     src_path = Path(src)
     dest_path = Path(dest)
@@ -237,9 +261,15 @@ def run(src, dest, force):
         # Step 3: Generate test data
         generate_test_data(src_path, dest_path)
     
-        # Step 4: Generate exp_table.h and invert_table.h
+        # Step 4: Generate activation tables
         generate_exp_table(dest_path)
         generate_invert_table(dest_path)
+        generate_sigmoid_table(dest_path)
+        generate_tanh_table(dest_path)
+        generate_softplus_table(dest_path)
+        generate_softsign_table(dest_path)
+        generate_elu_table(dest_path)
+        generate_selu_table(dest_path)
     
         # Done!
         print_msg('the specified hls4ml Vivado HLS project has been converted '
