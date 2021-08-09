@@ -4,6 +4,7 @@ import shutil
 import re
 import random
 import subprocess
+import numpy as np
 from pathlib import Path
 
 
@@ -200,6 +201,12 @@ def generate_test_data(src_path, dest_path):
     save(test_template_dest, dest_path / 'myproject_test.cpp')
 
 
+def create_table_directory(dest_path):
+    path = dest_path / 'activation_tables'
+    path.mkdir(parents=True)
+    return path
+
+
 def generate_exp_table(dest_path):
     pass
 
@@ -208,29 +215,81 @@ def generate_invert_table(dest_path):
     pass
 
 
-def generate_sigmoid_table(dest_path):
-    pass
+# The code below is based on
+# https://github.com/vloncar/hls4ml/blob/quartus_new/hls4ml/writer/quartus_writer.py
+# ------------------------------------------------------------
+def generate_sigmoid_table(table_size, dest_path):
+    file_path = dest_path / 'sigmoid_table.h'
+
+    with file_path.open(mode='w') as h_file:
+        sep = ''
+        for i in range(table_size):
+            in_val = 2 * 8.0 * (i - float(table_size) / 2.0) / float(table_size)
+            real_val = 1.0 / (1 + np.exp(-in_val))
+            h_file.write(sep + str(real_val))
+            sep = ", "
 
 
-def generate_tanh_table(dest_path):
-    pass
+def generate_tanh_table(table_size, dest_path):
+    file_path = dest_path / 'tanh_table.h'
+
+    with file_path.open(mode='w') as h_file:
+        sep = ''
+        for i in range(table_size):
+            in_val = 2 * 4.0 * (i - float(table_size) / 2.0) / float(table_size)
+            real_val = np.tanh(in_val)
+            h_file.write(sep + str(real_val))
+            sep = ", "
 
 
-def generate_softplus_table(dest_path):
-    pass
+def generate_softplus_table(table_size, dest_path):
+    file_path = dest_path / 'softplus_table.h'
+
+    with file_path.open(mode='w') as h_file:
+        sep = ''
+        for i in range(table_size):
+            in_val = 2 * 8.0 * (i - float(table_size) / 2.0) / float(table_size)
+            real_val = np.log(np.exp(in_val) + 1.)
+            h_file.write(sep + str(real_val))
+            sep = ", "
 
 
-def generate_softsign_table(dest_path):
-    pass
+def generate_softsign_table(table_size, dest_path):
+    file_path = dest_path / 'softsign_table.h'
+
+    with file_path.open(mode='w') as h_file:
+        sep = ''
+        for i in range(table_size):
+            in_val = 2 * 8.0 * (i - float(table_size) / 2.0) / float(table_size)
+            real_val = np.log(np.exp(in_val) + 1.)
+            h_file.write(sep + str(real_val))
+            sep = ", "
 
 
-def generate_elu_table(dest_path):
-    pass
+def generate_elu_table(table_size, dest_path):
+    file_path = dest_path / 'elu_table.h'
+
+    with file_path.open(mode='w') as h_file:
+        sep = ''
+        for i in range(table_size):
+            in_val = -8.0 * i / float(table_size)
+            real_val = np.exp(in_val) - 1.
+            h_file.write(sep + str(real_val))
+            sep = ", "
 
 
-def generate_selu_table(dest_path):
-    pass
+def generate_selu_table(table_size, dest_path):
+    file_path = dest_path / 'selu_table.h'
 
+    with file_path.open(mode='w') as h_file:
+        sep = ''
+        for i in range(table_size):
+            in_val = -8.0 * i / float(table_size)
+            real_val = 1.0507009873554804934193349852946 * \
+                (1.6732632423543772848170429916717 * (np.exp(in_val) - 1.))
+            h_file.write(sep + str(real_val))
+            sep = ", "
+# ------------------------------------------------------------
 
 def run(src, dest, force):
     src_path = Path(src)
@@ -262,14 +321,16 @@ def run(src, dest, force):
         generate_test_data(src_path, dest_path)
     
         # Step 4: Generate activation tables
-        generate_exp_table(dest_path)
-        generate_invert_table(dest_path)
-        generate_sigmoid_table(dest_path)
-        generate_tanh_table(dest_path)
-        generate_softplus_table(dest_path)
-        generate_softsign_table(dest_path)
-        generate_elu_table(dest_path)
-        generate_selu_table(dest_path)
+        table_size = 1024
+        dest_table_path = create_table_directory(dest_path)
+        generate_exp_table(dest_table_path)
+        generate_invert_table(dest_table_path)
+        generate_sigmoid_table(table_size, dest_table_path)
+        generate_tanh_table(table_size, dest_table_path)
+        generate_softplus_table(table_size, dest_table_path)
+        generate_softsign_table(table_size, dest_table_path)
+        generate_elu_table(table_size, dest_table_path)
+        generate_selu_table(table_size, dest_table_path)
     
         # Done!
         print_msg('the specified hls4ml Vivado HLS project has been converted '
