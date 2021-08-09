@@ -3,6 +3,7 @@ import argparse
 import shutil
 import re
 import random
+import subprocess
 from pathlib import Path
 
 
@@ -139,7 +140,12 @@ def generate_test_data(src_path, dest_path):
 
             inputs.write(';'.join(input_list) + '\n')
 
+    shutil.copy2(input_path, src_path / 'tb_data')
+
     # Generate expected data
+    expected_path_src = src_path / 'tb_data' / 'tb_output_predictions.dat'
+    expected_path_src.unlink(missing_ok=True)
+    
     test_template_path = \
         Path(__file__).parent.parent / 'templates' / 'myproject_test.cpp'
     test_template = get_string_from_file(test_template_path)
@@ -150,6 +156,30 @@ def generate_test_data(src_path, dest_path):
 
     old_test_path = test_path.rename(src_path / 'myproject_test.cpp.old')
     save(test_template, test_path)
+
+    proc = subprocess.run(['vivado_hls',
+                           '-f',
+                           'build_prj.tcl',
+                           '"reset=False csim=True synth=False cosim=False '
+                           'validation=False export=False vsynth=False"'],
+                          cwd=src_path,
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.STDOUT,
+                          encoding='utf-8')
+
+    test_path.unlink()
+    old_test_path.rename(src_path / 'myproject_test.cpp')
+    
+    if proc.returncode != 0:
+        with open('vivado_hls_error.log', 'w') as log_file:
+            log_file.write(proc.stdout)
+
+        raise RuntimeError('Vivado HLS could not run the C simulation. See '
+                           'vivado_hls_error.log for more details.')
+    
+    expected_path_dest = dest_path / 'tb_data'
+
+    shutil.copy2(expected_path_src, expected_path_dest)
 
 
 def generate_exp_table(dest_path):
