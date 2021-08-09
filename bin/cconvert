@@ -190,7 +190,7 @@ def generate_invert_table(dest_path):
     pass
 
 
-def run(src, dest):
+def run(src, dest, force):
     src_path = Path(src)
     dest_path = Path(dest)
 
@@ -200,6 +200,15 @@ def run(src, dest):
 
         if not dest_path.exists():
             dest_path.mkdir(parents=True)
+        elif next(dest_path.iterdir(), None) is not None:
+            if force:
+                shutil.rmtree(dest_path)
+                dest_path.mkdir(parents=True)
+            else:
+                error('the destination directory already exists and is not '
+                      'empty, run the program again with --force if you '
+                      'still want to proceed (all data stored in the '
+                      'destination directory WILL be destroyed!)')
 
         # Step 1: Copy the files
         copy_files(src_path, dest_path)
@@ -232,6 +241,9 @@ if __name__ == '__main__':
                         type=str, help='the path to a directory where the '
                         'Catapult project should be exported to (the directory '
                         'will be created if it does not exist)')
+    parser.add_argument('--force', action='store_true', dest='force',
+                        help='remove the destination directory if it exists '
+                        'and is not empty')
 
     args = parser.parse_args()
-    run(args.src, args.dest)
+    run(args.src, args.dest, args.force)
