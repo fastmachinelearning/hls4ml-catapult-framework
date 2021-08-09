@@ -184,6 +184,21 @@ def generate_test_data(src_path, dest_path):
 
     shutil.copy2(expected_path_src, expected_path_dest)
 
+    # Make a test bench for Catapult
+    test_template_dest_path = \
+        Path(__file__).parent.parent / 'templates' / 'myproject_test.cpp'
+    test_template_dest = get_string_from_file(test_template_dest_path)
+    test_template_dest = test_template_dest.replace('{{N_INPUT}}',
+                                                    input_num_name)
+    test_template_dest = test_template_dest.replace('{{N_OUTPUT}}',
+                                                    output_num_name)
+    test_template_dest = test_template_dest.replace('{{INPUT_TYPE}}',
+                                                    input_type)
+    test_template_dest = test_template_dest.replace('{{OUTPUT_TYPE}}',
+                                                    output_type)
+
+    save(test_template_dest, dest_path / 'myproject_test.cpp')
+
 
 def generate_exp_table(dest_path):
     pass
