@@ -4,6 +4,7 @@ import shutil
 import re
 import random
 import subprocess
+import math
 import numpy as np
 from pathlib import Path
 
@@ -207,17 +208,92 @@ def create_table_directory(dest_path):
     return path
 
 
-def generate_exp_table(dest_path):
-    pass
+def get_bits_for_exp_and_inv(dest_path):
+    parameters_path = dest_path / 'parameters.h'
+    parameters = get_string_from_file(parameters_path)
+    regex_exp = \
+        re.search('typedef ac_fixed<(\d+)\s*,\s*(\d+)\s*,\s*true.*> exp_table_t',
+                  parameters)
+
+    if regex_exp is None:
+        exp_tuple = None
+    else:
+        exp_bits_num = int(regex_exp.group(1))
+        exp_int_bits_num = int(regex_exp.group(2))
+        exp_tuple = (exp_bits_num, exp_int_bits_num)
+
+    regex_inv = \
+        re.search('typedef ac_fixed<(\d+)\s*,\s*(\d+)\s*,\s*true.*> inv_table_t',
+                  parameters)
+
+    if regex_inv is None:
+        inv_tuple = None
+    else:
+        inv_bits_num = int(regex_inv.group(1))
+        inv_int_bits_num = int(regex_inv.group(2))
+        inv_tuple = (inv_bits_num, inv_int_bits_num)
+
+    return exp_tuple, inv_tuple
 
 
-def generate_invert_table(dest_path):
-    pass
+def softmax_real_val_from_idx(bits_num, int_bits_num, table_size, i):
+    n = math.ceil(math.log2(table_size))
+
+    x = i << (bits_num - n)
+    mask = 1 << (bits_num - 1)
+    neg = (x & mask) != 0
+
+    x /= 2 ** (bits_num - int_bits_num)
+    
+    if neg:
+        x -= 2 ** int_bits_num
+
+    return x
 
 
 # The code below is based on
 # https://github.com/vloncar/hls4ml/blob/quartus_new/hls4ml/writer/quartus_writer.py
 # ------------------------------------------------------------
+def generate_exp_table(exp_bits, table_size, dest_path):
+    file_path = dest_path / 'exp_table.h'
+
+    if exp_bits is None:
+        with file_path.open(mode='w') as h_file:
+            h_file.write(' ')
+        return
+    
+    bits_num, int_bits_num = exp_bits
+
+    with file_path.open(mode='w') as h_file:
+        sep = ''
+        for i in range(table_size):
+            in_val = softmax_real_val_from_idx(bits_num, int_bits_num,
+                                               table_size, i)
+            real_val = np.exp(in_val)
+            h_file.write(sep + str(real_val))
+            sep = ", "
+
+
+def generate_invert_table(inv_bits, table_size, dest_path):
+    file_path = dest_path / 'invert_table.h'
+
+    if inv_bits is None:
+        with file_path.open(mode='w') as h_file:
+            h_file.write(' ')
+        return
+    
+    bits_num, int_bits_num = inv_bits
+
+    with file_path.open(mode='w') as h_file:
+        sep = ''
+        for i in range(table_size):
+            in_val = softmax_real_val_from_idx(bits_num, int_bits_num,
+                                               table_size, i)
+            real_val = 1.0 / in_val if in_val != 0 else 0.0
+            h_file.write(sep + str(real_val))
+            sep = ", "
+
+
 def generate_sigmoid_table(table_size, dest_path):
     file_path = dest_path / 'sigmoid_table.h'
 
@@ -323,8 +399,12 @@ def run(src, dest, force):
         # Step 4: Generate activation tables
         table_size = 1024
         dest_table_path = create_table_directory(dest_path)
-        generate_exp_table(dest_table_path)
-        generate_invert_table(dest_table_path)
+
+        exp_bits, inv_bits = get_bits_for_exp_and_inv(dest_path)
+
+        generate_exp_table(exp_bits, table_size, dest_table_path)
+        generate_invert_table(inv_bits, table_size, dest_table_path)
+        
         generate_sigmoid_table(table_size, dest_table_path)
         generate_tanh_table(table_size, dest_table_path)
         generate_softplus_table(table_size, dest_table_path)
