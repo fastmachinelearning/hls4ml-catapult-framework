@@ -251,6 +251,18 @@ def softmax_real_val_from_idx(bits_num, int_bits_num, table_size, i):
     return x
 
 
+def get_max_positive_value(bits_num, int_bits_num, signed=True):
+    max_val = 0
+    for i in range(int_bits_num - (2 if signed else 1),
+                   int_bits_num - bits_num - 1, -1):
+        max_val += 2 ** i
+    return max_val
+
+
+def get_min_positive_value(bits_num, int_bits_num):
+    return 2 ** (int_bits_num - bits_num)
+
+
 # The code below is based on
 # https://github.com/vloncar/hls4ml/blob/quartus_new/hls4ml/writer/quartus_writer.py
 # ------------------------------------------------------------
@@ -263,13 +275,15 @@ def generate_exp_table(exp_bits, table_size, dest_path):
         return
     
     bits_num, int_bits_num = exp_bits
-
+    max_val = get_max_positive_value(bits_num, int_bits_num)
+    min_val = get_min_positive_value(bits_num, int_bits_num)
+    
     with file_path.open(mode='w') as h_file:
         sep = ''
         for i in range(table_size):
             in_val = softmax_real_val_from_idx(bits_num, int_bits_num,
                                                table_size, i)
-            real_val = np.exp(in_val)
+            real_val = np.clip(np.exp(in_val), min_val, max_val)
             h_file.write(sep + str(real_val))
             sep = ", "
 
