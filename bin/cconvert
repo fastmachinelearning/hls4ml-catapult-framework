@@ -305,7 +305,13 @@ def generate_exp_table(data_bits, exp_bits, table_size, dest_path):
         for i in range(table_size):
             in_val = softmax_real_val_from_idx(data_bits_num, data_int_bits_num,
                                                table_size, i)
-            real_val = np.clip(np.exp(in_val), min_val, max_val)
+            real_val = np.exp(in_val)
+
+            if real_val < min_val and min_val - real_val > real_val:
+                real_val = 0.0
+            else:
+                real_val = np.clip(real_val, min_val, max_val)
+
             h_file.write(sep + str(real_val))
             sep = ", "
 
