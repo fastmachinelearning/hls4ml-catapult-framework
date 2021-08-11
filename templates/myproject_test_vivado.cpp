@@ -65,6 +65,20 @@ inline void convert(std::vector<int> ints, ap_fixed<N, I> &result)
 }
 
 template<int N, int I>
+inline void convert(std::vector<int> ints,
+                    ap_fixed<N, I, AP_RND, AP_SAT> &result)
+{
+	int bits = N;
+	int i = ints.size() - 1;
+
+	while (bits > 0) {
+		result(std::min(N - bits + 31, N - 1), N - bits) = ints[i];
+		bits -= 32;
+		i--;
+	}
+}
+
+template<int N, int I>
 inline void convert(ap_fixed<N, I> input, std::vector<int> &result)
 {
 	int bits = N;
