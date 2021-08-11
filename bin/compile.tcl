@@ -7,7 +7,7 @@ options set Input/CppStandard c++11
 options set Input/TargetPlatform x86_64
 solution new -state new
 solution file add ./myproject.cpp
-solution file set ./myproject.cpp -args -I/home/mgraczyk/Desktop/Catapult/hls4ml-catapult-template/catapult
+solution file set ./myproject.cpp -args "-I/home/mgraczyk/Desktop/Catapult/hls4ml-catapult-template/catapult -I/home/mgraczyk/Desktop/Catapult/projects/$::env(TCL_PROJECT_NAME)/activation_tables"
 if {$::env(TEST) == 1} { solution file add ./myproject_test.cpp -exclude true }
 go analyze
 solution design set myproject -top
