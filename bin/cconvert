@@ -209,11 +209,31 @@ def create_table_directory(dest_path):
 
 
 def get_bits_for_exp_and_inv(dest_path):
+    myproject_path = dest_path / 'myproject.cpp'
+    myproject = get_string_from_file(myproject_path)
+    regex_input_type = \
+        re.search(r'nnet::softmax<(\S+),.+?>', myproject)
+
+    if regex_input_type is None:
+        data_tuple = None
+    else:
+        softmax_input_type = regex_input_type.group(1)
+
+        defines_path = dest_path / 'defines.h'
+        defines = get_string_from_file(defines_path)
+        regex_data = \
+            re.search(r'typedef ac_fixed<(\d+)\s*,\s*(\d+)\s*,\s*true.*> ' +
+                      softmax_input_type, defines)
+
+        data_bits_num = int(regex_data.group(1))
+        data_int_bits_num = int(regex_data.group(2))
+        data_tuple = (data_bits_num, data_int_bits_num)
+
     parameters_path = dest_path / 'parameters.h'
     parameters = get_string_from_file(parameters_path)
     regex_exp = \
-        re.search('typedef ac_fixed<(\d+)\s*,\s*(\d+)\s*,\s*true.*> exp_table_t',
-                  parameters)
+        re.search(r'typedef ac_fixed<(\d+)\s*,\s*(\d+)\s*,\s*true.*> '
+                  'exp_table_t', parameters)
 
     if regex_exp is None:
         exp_tuple = None
@@ -223,8 +243,8 @@ def get_bits_for_exp_and_inv(dest_path):
         exp_tuple = (exp_bits_num, exp_int_bits_num)
 
     regex_inv = \
-        re.search('typedef ac_fixed<(\d+)\s*,\s*(\d+)\s*,\s*true.*> inv_table_t',
-                  parameters)
+        re.search(r'typedef ac_fixed<(\d+)\s*,\s*(\d+)\s*,\s*true.*> '
+                  'inv_table_t', parameters)
 
     if regex_inv is None:
         inv_tuple = None
@@ -233,7 +253,7 @@ def get_bits_for_exp_and_inv(dest_path):
         inv_int_bits_num = int(regex_inv.group(2))
         inv_tuple = (inv_bits_num, inv_int_bits_num)
 
-    return exp_tuple, inv_tuple
+    return data_tuple, exp_tuple, inv_tuple
 
 
 def softmax_real_val_from_idx(bits_num, int_bits_num, table_size, i):
@@ -266,7 +286,7 @@ def get_min_positive_value(bits_num, int_bits_num):
 # The code below is based on
 # https://github.com/vloncar/hls4ml/blob/quartus_new/hls4ml/writer/quartus_writer.py
 # ------------------------------------------------------------
-def generate_exp_table(exp_bits, table_size, dest_path):
+def generate_exp_table(data_bits, exp_bits, table_size, dest_path):
     file_path = dest_path / 'exp_table.h'
 
     if exp_bits is None:
@@ -277,18 +297,20 @@ def generate_exp_table(exp_bits, table_size, dest_path):
     bits_num, int_bits_num = exp_bits
     max_val = get_max_positive_value(bits_num, int_bits_num)
     min_val = get_min_positive_value(bits_num, int_bits_num)
+
+    data_bits_num, data_int_bits_num = data_bits
     
     with file_path.open(mode='w') as h_file:
         sep = ''
         for i in range(table_size):
-            in_val = softmax_real_val_from_idx(bits_num, int_bits_num,
+            in_val = softmax_real_val_from_idx(data_bits_num, data_int_bits_num,
                                                table_size, i)
             real_val = np.clip(np.exp(in_val), min_val, max_val)
             h_file.write(sep + str(real_val))
             sep = ", "
 
 
-def generate_invert_table(inv_bits, table_size, dest_path):
+def generate_invert_table(data_bits, inv_bits, table_size, dest_path):
     file_path = dest_path / 'invert_table.h'
 
     if inv_bits is None:
@@ -297,13 +319,16 @@ def generate_invert_table(inv_bits, table_size, dest_path):
         return
     
     bits_num, int_bits_num = inv_bits
+    max_val = get_max_positive_value(bits_num, int_bits_num)
+    
+    data_bits_num, data_int_bits_num = data_bits
 
     with file_path.open(mode='w') as h_file:
         sep = ''
         for i in range(table_size):
-            in_val = softmax_real_val_from_idx(bits_num, int_bits_num,
+            in_val = softmax_real_val_from_idx(data_bits_num, data_int_bits_num,
                                                table_size, i)
-            real_val = 1.0 / in_val if in_val != 0 else 0.0
+            real_val = 1.0 / in_val if in_val != 0 else max_val
             h_file.write(sep + str(real_val))
             sep = ", "
 
@@ -414,10 +439,10 @@ def run(src, dest, force):
         table_size = 1024
         dest_table_path = create_table_directory(dest_path)
 
-        exp_bits, inv_bits = get_bits_for_exp_and_inv(dest_path)
+        data_bits, exp_bits, inv_bits = get_bits_for_exp_and_inv(dest_path)
 
-        generate_exp_table(exp_bits, table_size, dest_table_path)
-        generate_invert_table(inv_bits, table_size, dest_table_path)
+        generate_exp_table(data_bits, exp_bits, table_size, dest_table_path)
+        generate_invert_table(exp_bits, inv_bits, table_size, dest_table_path)
         
         generate_sigmoid_table(table_size, dest_table_path)
         generate_tanh_table(table_size, dest_table_path)
