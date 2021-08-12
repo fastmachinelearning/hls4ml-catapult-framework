@@ -17,8 +17,8 @@ if __name__ == "__main__":
                                      'specifying ID 0 with no --stress flag.')
     parser.add_argument('nums', metavar='ID', type=str,
                         nargs='*', help='the IDs of projects to be processed, '
-                        'e.g. 1 2 3 will test Dense1, Dense2 and '
-                        'Dense3 respectively. If not provided, all Dense '
+                        'e.g. 1 2 3 will test Dense001, Dense002 and '
+                        'Dense003 respectively. If not provided, all Dense '
                         ' projects (except stress ones) + EntireTemplate will '
                         'be processed.')
     parser.add_argument('--stress', action='store_true', dest='stress',
@@ -41,7 +41,7 @@ if __name__ == "__main__":
             nums = []
             pattern = r'^SDense(\S+)$'
         else:
-            nums = ['0']
+            nums = ['000']
             pattern = r'^Dense(\S+)$'
 
         for project in os.listdir('projects'):
@@ -53,6 +53,10 @@ if __name__ == "__main__":
     else:
         nums = args.nums
 
+    for i in range(len(nums)):
+        digit_count = len(re.search(r'(\d+)', nums[i]).group(1))
+        nums[i] = (3 - digit_count) * '0' + nums[i]
+
     if not os.path.exists('compile_logs'):
         os.makedirs('compile_logs')
     else:
@@ -62,7 +66,7 @@ if __name__ == "__main__":
     errors = False
 
     for i in nums:
-        name = f'Dense{i}' if i != '0' else 'EntireTemplate'
+        name = f'Dense{i}' if i != '000' else 'EntireTemplate'
 
         if stress:
             if name == 'EntireTemplate':
@@ -70,7 +74,7 @@ if __name__ == "__main__":
 
             name = 'S' + name
         
-        test = 1 if do_test and i != '0' else 0
+        test = 1 if do_test and i != '000' else 0
 
         print(f'{name}... ', end='', flush=True)
 
