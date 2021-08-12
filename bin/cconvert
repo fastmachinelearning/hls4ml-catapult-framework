@@ -382,7 +382,7 @@ def generate_softsign_table(table_size, dest_path):
         sep = ''
         for i in range(table_size):
             in_val = 2 * 8.0 * (i - float(table_size) / 2.0) / float(table_size)
-            real_val = np.log(np.exp(in_val) + 1.)
+            real_val = in_val / (np.fabs(in_val) + 1.)
             h_file.write(sep + str(real_val))
             sep = ", "
 
