@@ -105,11 +105,26 @@ if __name__ == "__main__":
             log_file.write(proc.stdout)
 
         if proc.returncode == 0:
-            if re.search('Error:.*make', proc.stdout) is not None:
+            error_match = re.search('Error:.*make', proc.stdout)
+
+            if error_match is not None:
                 errors = True
                 print('TEST FAIL')
             else:
-                print('OK')
+                diff_match = \
+                    re.search(r'{{LARGEST_RELATIVE_DIFFERENCE_OVERALL=(.+)}}',
+                              proc.stdout)
+
+                if diff_match is not None:
+                    diff = float(diff_match.group(1))
+
+                    if diff >= 1.0:
+                        print(
+                            f'TEST PROBLEM LIKELY (test largest error: {diff})')
+                    else:
+                        print(f'OK (test largest error: {diff_match.group(1)})')
+                else:
+                    print(f'OK (no testing run)')
         else:
             errors = True
             print('COMPILE FAIL')
@@ -117,8 +132,9 @@ if __name__ == "__main__":
     print()
 
     if errors:
-        print('ERROR: Some models failed testing or could not be compiled!')
+        print('ERROR: Some models could not be compiled or tested!')
     else:
-        print('SUCCESS: All models could be compiled along with passing testing where applicable!')
+        print('SUCCESS: All models could be compiled and tested! You need to '
+              'judge the testing results by hand.')
 
     print(f'See log files in "compile_logs" for more details.')
