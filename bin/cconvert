@@ -1,0 +1,483 @@
+#!/usr/bin/python3
+import argparse
+import shutil
+import re
+import random
+import subprocess
+import math
+import numpy as np
+from pathlib import Path
+
+
+PROG_NAME = 'cconvert'
+
+
+def error(msg):
+    print_msg(f'error: {msg}')
+    exit(1)
+
+
+def print_msg(msg):
+    print(f'{PROG_NAME}: {msg}')
+
+
+def get_string_from_file(path):
+    with path.open() as f:
+        string = ''
+        for line in f:
+            string += line
+
+    return string
+
+
+def save(string, path):
+    with path.open(mode='w') as f:
+        f.write(string)
+    
+
+def replace(string, pattern, repl):
+    return re.sub(pattern, repl, string, flags=re.DOTALL)
+
+
+def copy_files(src_path, dest_path):
+    FIRMWARE_PATH = src_path / Path('firmware')
+    FILES = [
+        (FIRMWARE_PATH / 'myproject.cpp', ''),
+        (FIRMWARE_PATH / 'myproject.h', ''),
+        (FIRMWARE_PATH / 'defines.h', ''),
+        (FIRMWARE_PATH / 'parameters.h', ''),
+        (FIRMWARE_PATH / 'weights', 'weights'),
+        (None, 'tb_data'),
+    ]
+
+    for path, dest_dir in FILES:
+        if path is None:
+            (dest_path / dest_dir).mkdir()
+        elif path.is_dir():
+            shutil.copytree(path, dest_path / dest_dir)
+        else:
+            shutil.copy2(path, dest_path / dest_dir)
+
+
+def replace_vivado(dest_path):
+    # Process myproject.cpp
+    myproject_path = dest_path / 'myproject.cpp'
+    myproject = get_string_from_file(myproject_path)
+    myproject = replace(myproject, r'#pragma', '//#pragma')
+    save(myproject, myproject_path)
+
+    # Process myproject.h
+    myproject_h_path = dest_path / 'myproject.h'
+    myproject_h = get_string_from_file(myproject_h_path)
+    myproject_h = replace(myproject_h, r'ap_(.*?)\.h', r'ac_\1.h')
+    save(myproject_h, myproject_h_path)
+
+    # Process defines.h
+    defines_path = dest_path / 'defines.h'
+    defines = get_string_from_file(defines_path)
+    defines = replace(defines, r'ap_(.*?)\.h', r'ac_\1.h')
+    defines = replace(defines, r'ap_fixed<(\d+[, ]+\d+)(.*?)>',
+                      r'ac_fixed<\1,true\2>')
+    defines = replace(defines, r'ap_ufixed<(\d+[, ]+\d+)(.*?)>',
+                      r'ac_fixed<\1,false\2>')
+    defines = replace(defines, r'ap_int<(\d+)(.*?)>', r'ac_int<\1,true\2>')
+    defines = replace(defines, r'ap_uint<(\d+)(.*?)>', r'ac_int<\1,false\2>')
+    defines = replace(defines, r'AP_', 'AC_')
+    save(defines, defines_path)
+
+    # Process parameters.h
+    parameters_path = dest_path / 'parameters.h'
+    parameters = get_string_from_file(parameters_path)
+    parameters = replace(parameters, r'ap_(.*?)\.h', r'ac_\1.h')
+    parameters = replace(parameters, r'ap_fixed<(\d+[, ]+\d+)(.*?)>',
+                         r'ac_fixed<\1,true\2>')
+    parameters = replace(parameters, r'ap_ufixed<(\d+[, ]+\d+)(.*?)>',
+                         r'ac_fixed<\1,false\2>')
+    parameters = replace(parameters, r'ap_int<(\d+)(.*?)>',
+                         r'ac_int<\1,true\2>')
+    parameters = replace(parameters, r'ap_uint<(\d+)(.*?)>',
+                         r'ac_int<\1,false\2>')
+    parameters = replace(parameters, r'AP_', 'AC_')
+    save(parameters, parameters_path)
+
+
+def generate_test_data(src_path, dest_path):
+    # Obtain network input and output types
+    test_path = src_path / 'myproject_test.cpp'
+    test = get_string_from_file(test_path)
+    regex_match = re.search(r'(\S+) .+;\s*nnet::copy_data.+;\s*(\S+) .+;', test)
+
+    input_type = regex_match.group(1)
+    output_type = regex_match.group(2)
+
+    # Obtain the number of network inputs and outputs + the input bit width
+    defines_path = src_path / 'firmware' / 'defines.h'
+    defines = get_string_from_file(defines_path)
+    regex_results = re.findall(r'#define (N_.+?) (\d+)', defines)
+
+    input_num_name, input_num = regex_results[0]
+    output_num_name, output_num = regex_results[-1]
+
+    input_num = int(input_num)
+    output_num = int(output_num)
+
+    regex_match = re.search(r'typedef ap_.+<(\d+).*> ' + input_type + ';',
+                            defines)
+    input_bits = int(regex_match.group(1))
+    
+    # Generate input data
+    input_path = dest_path / 'tb_data' / 'tb_input_features.dat'
+    with input_path.open(mode='w') as inputs:
+        sets = 20
+    
+        for _ in range(sets):
+            input_list = []
+    
+            for _ in range(input_num):
+                bits = input_bits
+                ints = []
+
+                while bits > 0:
+                    ints = [random.getrandbits(min(bits, 32))] + ints
+                    bits -= 32
+        
+                input_list.append(' '.join(map(str, ints)))
+
+            inputs.write(';'.join(input_list) + '\n')
+
+    shutil.copy2(input_path, src_path / 'tb_data')
+
+    # Generate expected data
+    expected_path_src = src_path / 'tb_data' / 'tb_output_predictions.dat'
+    expected_path_src.unlink(missing_ok=True)
+    
+    test_template_path = \
+        Path(__file__).parent.parent / 'templates' / 'myproject_test_vivado.cpp'
+    test_template = get_string_from_file(test_template_path)
+    test_template = test_template.replace('{{N_INPUT}}', input_num_name)
+    test_template = test_template.replace('{{N_OUTPUT}}', output_num_name)
+    test_template = test_template.replace('{{INPUT_TYPE}}', input_type)
+    test_template = test_template.replace('{{OUTPUT_TYPE}}', output_type)
+
+    old_test_path = test_path.rename(src_path / 'myproject_test.cpp.old')
+    save(test_template, test_path)
+
+    proc = subprocess.run(['vivado_hls',
+                           '-f',
+                           'build_prj.tcl',
+                           '"reset=False csim=True synth=False cosim=False '
+                           'validation=False export=False vsynth=False"'],
+                          cwd=src_path,
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.STDOUT,
+                          encoding='utf-8')
+
+    test_path.unlink()
+    old_test_path.rename(src_path / 'myproject_test.cpp')
+    
+    if proc.returncode != 0:
+        with open('vivado_hls_error.log', 'w') as log_file:
+            log_file.write(proc.stdout)
+
+        raise RuntimeError('Vivado HLS could not run the C simulation. See '
+                           'vivado_hls_error.log for more details.')
+    
+    expected_path_dest = dest_path / 'tb_data'
+
+    shutil.copy2(expected_path_src, expected_path_dest)
+
+    # Make a test bench for Catapult
+    test_template_dest_path = \
+        Path(__file__).parent.parent / 'templates' / 'myproject_test.cpp'
+    test_template_dest = get_string_from_file(test_template_dest_path)
+    test_template_dest = test_template_dest.replace('{{N_INPUT}}',
+                                                    input_num_name)
+    test_template_dest = test_template_dest.replace('{{N_OUTPUT}}',
+                                                    output_num_name)
+    test_template_dest = test_template_dest.replace('{{INPUT_TYPE}}',
+                                                    input_type)
+    test_template_dest = test_template_dest.replace('{{OUTPUT_TYPE}}',
+                                                    output_type)
+
+    save(test_template_dest, dest_path / 'myproject_test.cpp')
+
+
+def create_table_directory(dest_path):
+    path = dest_path / 'activation_tables'
+    path.mkdir(parents=True)
+    return path
+
+
+def get_bits_for_exp_and_inv(dest_path):
+    myproject_path = dest_path / 'myproject.cpp'
+    myproject = get_string_from_file(myproject_path)
+    regex_input_type = \
+        re.search(r'nnet::softmax<(\S+),.+?>', myproject)
+
+    if regex_input_type is None:
+        data_tuple = None
+    else:
+        softmax_input_type = regex_input_type.group(1)
+
+        defines_path = dest_path / 'defines.h'
+        defines = get_string_from_file(defines_path)
+        regex_data = \
+            re.search(r'typedef ac_fixed<(\d+)\s*,\s*(\d+)\s*,\s*true.*> ' +
+                      softmax_input_type, defines)
+
+        data_bits_num = int(regex_data.group(1))
+        data_int_bits_num = int(regex_data.group(2))
+        data_tuple = (data_bits_num, data_int_bits_num)
+
+    parameters_path = dest_path / 'parameters.h'
+    parameters = get_string_from_file(parameters_path)
+    regex_exp = \
+        re.search(r'typedef ac_fixed<(\d+)\s*,\s*(\d+)\s*,\s*true.*> '
+                  'exp_table_t', parameters)
+
+    if regex_exp is None:
+        exp_tuple = None
+    else:
+        exp_bits_num = int(regex_exp.group(1))
+        exp_int_bits_num = int(regex_exp.group(2))
+        exp_tuple = (exp_bits_num, exp_int_bits_num)
+
+    regex_inv = \
+        re.search(r'typedef ac_fixed<(\d+)\s*,\s*(\d+)\s*,\s*true.*> '
+                  'inv_table_t', parameters)
+
+    if regex_inv is None:
+        inv_tuple = None
+    else:
+        inv_bits_num = int(regex_inv.group(1))
+        inv_int_bits_num = int(regex_inv.group(2))
+        inv_tuple = (inv_bits_num, inv_int_bits_num)
+
+    return data_tuple, exp_tuple, inv_tuple
+
+
+def softmax_real_val_from_idx(bits_num, int_bits_num, table_size, i):
+    n = math.ceil(math.log2(table_size))
+
+    x = i << (bits_num - n)
+    mask = 1 << (bits_num - 1)
+    neg = (x & mask) != 0
+
+    x /= 2 ** (bits_num - int_bits_num)
+    
+    if neg:
+        x -= 2 ** int_bits_num
+
+    return x
+
+
+def get_max_positive_value(bits_num, int_bits_num, signed=True):
+    max_val = 0
+    for i in range(int_bits_num - (2 if signed else 1),
+                   int_bits_num - bits_num - 1, -1):
+        max_val += 2 ** i
+    return max_val
+
+
+def get_min_positive_value(bits_num, int_bits_num):
+    return 2 ** (int_bits_num - bits_num)
+
+
+# The code below is based on
+# https://github.com/vloncar/hls4ml/blob/quartus_new/hls4ml/writer/quartus_writer.py
+# ------------------------------------------------------------
+def generate_exp_table(data_bits, exp_bits, table_size, dest_path):
+    file_path = dest_path / 'exp_table.h'
+
+    if exp_bits is None:
+        with file_path.open(mode='w') as h_file:
+            h_file.write(' ')
+        return
+    
+    bits_num, int_bits_num = exp_bits
+    max_val = get_max_positive_value(bits_num, int_bits_num)
+    min_val = get_min_positive_value(bits_num, int_bits_num)
+
+    data_bits_num, data_int_bits_num = data_bits
+    
+    with file_path.open(mode='w') as h_file:
+        sep = ''
+        for i in range(table_size):
+            in_val = softmax_real_val_from_idx(data_bits_num, data_int_bits_num,
+                                               table_size, i)
+            real_val = np.exp(in_val)
+
+            if real_val < min_val and min_val - real_val > real_val:
+                real_val = 0.0
+            else:
+                real_val = np.clip(real_val, min_val, max_val)
+
+            h_file.write(sep + str(real_val))
+            sep = ", "
+
+
+def generate_invert_table(data_bits, inv_bits, table_size, dest_path):
+    file_path = dest_path / 'invert_table.h'
+
+    if inv_bits is None:
+        with file_path.open(mode='w') as h_file:
+            h_file.write(' ')
+        return
+    
+    bits_num, int_bits_num = inv_bits
+    max_val = get_max_positive_value(bits_num, int_bits_num)
+    
+    data_bits_num, data_int_bits_num = data_bits
+
+    with file_path.open(mode='w') as h_file:
+        sep = ''
+        for i in range(table_size):
+            in_val = softmax_real_val_from_idx(data_bits_num, data_int_bits_num,
+                                               table_size, i)
+            real_val = 1.0 / in_val if in_val != 0 else max_val
+            h_file.write(sep + str(real_val))
+            sep = ", "
+
+
+def generate_sigmoid_table(table_size, dest_path):
+    file_path = dest_path / 'sigmoid_table.h'
+
+    with file_path.open(mode='w') as h_file:
+        sep = ''
+        for i in range(table_size):
+            in_val = 2 * 8.0 * (i - float(table_size) / 2.0) / float(table_size)
+            real_val = 1.0 / (1 + np.exp(-in_val))
+            h_file.write(sep + str(real_val))
+            sep = ", "
+
+
+def generate_tanh_table(table_size, dest_path):
+    file_path = dest_path / 'tanh_table.h'
+
+    with file_path.open(mode='w') as h_file:
+        sep = ''
+        for i in range(table_size):
+            in_val = 2 * 4.0 * (i - float(table_size) / 2.0) / float(table_size)
+            real_val = np.tanh(in_val)
+            h_file.write(sep + str(real_val))
+            sep = ", "
+
+
+def generate_softplus_table(table_size, dest_path):
+    file_path = dest_path / 'softplus_table.h'
+
+    with file_path.open(mode='w') as h_file:
+        sep = ''
+        for i in range(table_size):
+            in_val = 2 * 8.0 * (i - float(table_size) / 2.0) / float(table_size)
+            real_val = np.log(np.exp(in_val) + 1.)
+            h_file.write(sep + str(real_val))
+            sep = ", "
+
+
+def generate_softsign_table(table_size, dest_path):
+    file_path = dest_path / 'softsign_table.h'
+
+    with file_path.open(mode='w') as h_file:
+        sep = ''
+        for i in range(table_size):
+            in_val = 2 * 8.0 * (i - float(table_size) / 2.0) / float(table_size)
+            real_val = np.log(np.exp(in_val) + 1.)
+            h_file.write(sep + str(real_val))
+            sep = ", "
+
+
+def generate_elu_table(table_size, dest_path):
+    file_path = dest_path / 'elu_table.h'
+
+    with file_path.open(mode='w') as h_file:
+        sep = ''
+        for i in range(table_size):
+            in_val = -8.0 * i / float(table_size)
+            real_val = np.exp(in_val) - 1.
+            h_file.write(sep + str(real_val))
+            sep = ", "
+
+
+def generate_selu_table(table_size, dest_path):
+    file_path = dest_path / 'selu_table.h'
+
+    with file_path.open(mode='w') as h_file:
+        sep = ''
+        for i in range(table_size):
+            in_val = -8.0 * i / float(table_size)
+            real_val = 1.0507009873554804934193349852946 * \
+                (1.6732632423543772848170429916717 * (np.exp(in_val) - 1.))
+            h_file.write(sep + str(real_val))
+            sep = ", "
+# ------------------------------------------------------------
+
+def run(src, dest, force):
+    src_path = Path(src)
+    dest_path = Path(dest)
+
+    try:
+        if not src_path.exists():
+            error('the source directory does not exist')
+
+        if not dest_path.exists():
+            dest_path.mkdir(parents=True)
+        elif next(dest_path.iterdir(), None) is not None:
+            if force:
+                shutil.rmtree(dest_path)
+                dest_path.mkdir(parents=True)
+            else:
+                error('the destination directory already exists and is not '
+                      'empty, run the program again with --force if you '
+                      'still want to proceed (all data stored in the '
+                      'destination directory WILL be destroyed!)')
+
+        # Step 1: Copy the files
+        copy_files(src_path, dest_path)
+
+        # Step 2: Replace Vivado-specific parts with Catapult ones
+        replace_vivado(dest_path)
+
+        # Step 3: Generate test data
+        generate_test_data(src_path, dest_path)
+    
+        # Step 4: Generate activation tables
+        table_size = 1024
+        dest_table_path = create_table_directory(dest_path)
+
+        data_bits, exp_bits, inv_bits = get_bits_for_exp_and_inv(dest_path)
+
+        generate_exp_table(data_bits, exp_bits, table_size, dest_table_path)
+        generate_invert_table(exp_bits, inv_bits, table_size, dest_table_path)
+        
+        generate_sigmoid_table(table_size, dest_table_path)
+        generate_tanh_table(table_size, dest_table_path)
+        generate_softplus_table(table_size, dest_table_path)
+        generate_softsign_table(table_size, dest_table_path)
+        generate_elu_table(table_size, dest_table_path)
+        generate_selu_table(table_size, dest_table_path)
+    
+        # Done!
+        print_msg('the specified hls4ml Vivado HLS project has been converted '
+                  'successfully!')
+    except Exception as ex:
+        shutil.rmtree(dest_path, ignore_errors=True)
+        raise ex
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(prog=PROG_NAME,
+                                     description='Convert an hls4ml Vivado HLS '
+                                     'project to its Catapult equivalent.')
+    parser.add_argument('src', metavar='SOURCE',
+                        type=str, help='the path to an hls4ml project directory')
+    parser.add_argument('dest', metavar='DESTINATION',
+                        type=str, help='the path to a directory where the '
+                        'Catapult project should be exported to (the directory '
+                        'will be created if it does not exist)')
+    parser.add_argument('--force', action='store_true', dest='force',
+                        help='remove the destination directory if it exists '
+                        'and is not empty')
+
+    args = parser.parse_args()
+    run(args.src, args.dest, args.force)
