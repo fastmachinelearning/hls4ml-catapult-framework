@@ -35,65 +35,65 @@ typedef {{INPUT_TYPE}} test_input_t;
 typedef {{OUTPUT_TYPE}} test_output_t;
 
 namespace nnet {
-    bool trace_enabled = true;
-    std::map<std::string, void *> *trace_outputs = NULL;
-    size_t trace_type_size = sizeof(double);
+  bool trace_enabled = true;
+  std::map<std::string, void *> *trace_outputs = NULL;
+  size_t trace_type_size = sizeof(double);
 }
 
 inline void split(std::string input, std::vector<std::string> &result, const char *delimiter)
 {
-	char* cstr=const_cast<char*>(input.c_str());
-	char* current;
-	current=strtok(cstr,delimiter);
-	while(current!=NULL) {
-	  result.push_back(std::string(current));
-	  current=strtok(NULL,delimiter);
-	}
+  char* cstr=const_cast<char*>(input.c_str());
+  char* current;
+  current=strtok(cstr,delimiter);
+  while(current!=NULL) {
+    result.push_back(std::string(current));
+    current=strtok(NULL,delimiter);
+  }
 }
 
 template<class T>
 inline void convert(std::vector<int> ints, T &result)
 {
-        int N = T::width;
-	int bits = N;
-	int i = ints.size() - 1;
+  int N = T::width;
+  int bits = N;
+  int i = ints.size() - 1;
 
-	while (bits > 0) {
-		result(std::min(N - bits + 31, N - 1), N - bits) = ints[i];
-		bits -= 32;
-		i--;
-	}
+  while (bits > 0) {
+    result(std::min(N - bits + 31, N - 1), N - bits) = ints[i];
+    bits -= 32;
+    i--;
+  }
 }
 
 template<class T>
 inline void convert(T input, std::vector<int> &result)
 {
-        int N = T::width;
-	int bits = N;
-	result.clear();
+  int N = T::width;
+  int bits = N;
+  result.clear();
 
-	while (bits > 0) {
-		result.insert(result.begin(), input(std::min(N - bits + 31, N - 1), N - bits));
-		bits -= 32;
-	}
+  while (bits > 0) {
+    result.insert(result.begin(), input(std::min(N - bits + 31, N - 1), N - bits));
+    bits -= 32;
+  }
 }
 
 inline void save(std::vector<std::vector<int> > &outputs, std::ofstream &fout)
 {
-	std::string sep_outer = "";
-	for (int i = 0; i < outputs.size(); i++) {
-		std::string sep_inner = "";
+  std::string sep_outer = "";
+  for (int i = 0; i < outputs.size(); i++) {
+    std::string sep_inner = "";
 
-		fout << sep_outer;
-		sep_outer = ";";
+    fout << sep_outer;
+    sep_outer = ";";
 
-		for (int j = 0; j < outputs[i].size(); j++) {
-			fout << sep_inner << outputs[i][j];
-			sep_inner = " ";
-		}
-	}
+    for (int j = 0; j < outputs[i].size(); j++) {
+      fout << sep_inner << outputs[i][j];
+      sep_inner = " ";
+    }
+  }
 
-	fout << std::endl;
+  fout << std::endl;
 }
 
 int main(int argc, char **argv)
@@ -108,12 +108,12 @@ int main(int argc, char **argv)
 
   if (pr_present) {
 #ifdef RTL_SIM
-	  RESULTS_LOG = "tb_data/rtl_cosim_results.log";
+    RESULTS_LOG = "tb_data/rtl_cosim_results.log";
 #else
-	  RESULTS_LOG = "tb_data/csim_results.log";
+    RESULTS_LOG = "tb_data/csim_results.log";
 #endif
   } else {
-	  RESULTS_LOG = "tb_data/tb_output_predictions.dat";
+    RESULTS_LOG = "tb_data/tb_output_predictions.dat";
   }
   std::ofstream fout(RESULTS_LOG);
 
@@ -123,7 +123,7 @@ int main(int argc, char **argv)
   if (fin.is_open()) {
     while ( std::getline(fin,iline)) {
       if (pr_present) {
-    	  std::getline(fpr,pline);
+        std::getline(fpr,pline);
       }
 
       // Read test data
@@ -133,34 +133,34 @@ int main(int argc, char **argv)
       test_input_t fc1_input[N_INPUT];
 
       for (int i = 0; i < N_INPUT; i++) {
-    	  std::vector<std::string> int_strs;
-    	  split(in_nums[i], int_strs, " ");
+        std::vector<std::string> int_strs;
+        split(in_nums[i], int_strs, " ");
 
-    	  std::vector<int> ints;
-    	  for (int i = 0; i < int_strs.size(); i++) {
-    		  ints.push_back(atoi(int_strs[i].c_str()));
-    	  }
+        std::vector<int> ints;
+        for (int i = 0; i < int_strs.size(); i++) {
+          ints.push_back(atoi(int_strs[i].c_str()));
+        }
 
-    	  convert<test_input_t>(ints, fc1_input[i]);
+        convert<test_input_t>(ints, fc1_input[i]);
       }
 
       test_output_t pr[N_OUTPUT];
 
       if (pr_present) {
-    	  std::vector<std::string> pr_nums;
-    	  split(pline, pr_nums, ";");
+        std::vector<std::string> pr_nums;
+        split(pline, pr_nums, ";");
 
-    	  for (int i = 0; i < N_OUTPUT; i++) {
-    		  std::vector<std::string> int_strs;
-    		  split(pr_nums[i], int_strs, " ");
+        for (int i = 0; i < N_OUTPUT; i++) {
+          std::vector<std::string> int_strs;
+          split(pr_nums[i], int_strs, " ");
 
-    		  std::vector<int> ints;
-    		  for (int i = 0; i < int_strs.size(); i++) {
-    			  ints.push_back(atoi(int_strs[i].c_str()));
-    		  }
+          std::vector<int> ints;
+          for (int i = 0; i < int_strs.size(); i++) {
+            ints.push_back(atoi(int_strs[i].c_str()));
+          }
 
-    		  convert<test_output_t>(ints, pr[i]);
-    	  }
+          convert<test_output_t>(ints, pr[i]);
+        }
       }
 
       // Run the code
@@ -179,11 +179,11 @@ int main(int argc, char **argv)
       std::cout << std::endl;
 
       if (pr_present) {
-    	  std::cout << "Expected:" << std::endl;
-      	  for (int i = 0; i < N_OUTPUT; i++) {
-      		  std::cout << pr[i] << " ";
-      	  }
-      	  std::cout << std::endl;
+        std::cout << "Expected:" << std::endl;
+        for (int i = 0; i < N_OUTPUT; i++) {
+          std::cout << pr[i] << " ";
+        }
+        std::cout << std::endl;
       }
 
       std::cout << "Results:" << std::endl;
@@ -191,7 +191,7 @@ int main(int argc, char **argv)
         std::cout << layer2_out[i] << " ";
 
         if (pr_present && layer2_out[i] != pr[i]) {
-        	different += 1;
+          different += 1;
         }
       }
       std::cout << std::endl;
@@ -202,9 +202,9 @@ int main(int argc, char **argv)
 
       std::vector<std::vector<int> > outputs;
       for (int i = 0; i < N_OUTPUT; i++) {
-    	  std::vector<int> output;
-    	  convert<test_output_t>(layer2_out[i], output);
-    	  outputs.push_back(output);
+        std::vector<int> output;
+        convert<test_output_t>(layer2_out[i], output);
+        outputs.push_back(output);
       }
 
       save(outputs, fout);
