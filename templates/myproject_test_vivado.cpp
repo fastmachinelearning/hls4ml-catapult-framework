@@ -51,9 +51,10 @@ inline void split(std::string input, std::vector<std::string> &result, const cha
 	}
 }
 
-template<int N, int I>
-inline void convert(std::vector<int> ints, ap_fixed<N, I> &result)
+template<class T>
+inline void convert(std::vector<int> ints, T &result)
 {
+        int N = T::width;
 	int bits = N;
 	int i = ints.size() - 1;
 
@@ -64,23 +65,10 @@ inline void convert(std::vector<int> ints, ap_fixed<N, I> &result)
 	}
 }
 
-template<int N, int I>
-inline void convert(std::vector<int> ints,
-                    ap_fixed<N, I, AP_RND, AP_SAT> &result)
+template<class T>
+inline void convert(T input, std::vector<int> &result)
 {
-	int bits = N;
-	int i = ints.size() - 1;
-
-	while (bits > 0) {
-		result(std::min(N - bits + 31, N - 1), N - bits) = ints[i];
-		bits -= 32;
-		i--;
-	}
-}
-
-template<int N, int I>
-inline void convert(ap_fixed<N, I> input, std::vector<int> &result)
-{
+        int N = T::width;
 	int bits = N;
 	result.clear();
 
@@ -153,7 +141,7 @@ int main(int argc, char **argv)
     		  ints.push_back(atoi(int_strs[i].c_str()));
     	  }
 
-    	  convert<test_input_t::width, test_input_t::iwidth>(ints, fc1_input[i]);
+    	  convert<test_input_t>(ints, fc1_input[i]);
       }
 
       test_output_t pr[N_OUTPUT];
@@ -171,7 +159,7 @@ int main(int argc, char **argv)
     			  ints.push_back(atoi(int_strs[i].c_str()));
     		  }
 
-    		  convert<test_output_t::width, test_output_t::iwidth>(ints, pr[i]);
+    		  convert<test_output_t>(ints, pr[i]);
     	  }
       }
 
@@ -215,7 +203,7 @@ int main(int argc, char **argv)
       std::vector<std::vector<int> > outputs;
       for (int i = 0; i < N_OUTPUT; i++) {
     	  std::vector<int> output;
-    	  convert<test_output_t::width, test_output_t::iwidth>(layer2_out[i], output);
+    	  convert<test_output_t>(layer2_out[i], output);
     	  outputs.push_back(output);
       }
 
