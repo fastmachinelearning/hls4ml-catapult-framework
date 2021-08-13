@@ -117,12 +117,19 @@ if __name__ == "__main__":
 
                 if diff_match is not None:
                     diff = float(diff_match.group(1))
+                    against_zero_comparison_tests = \
+                        len(re.findall(
+                            '{{COMPARISON_AGAINST_ZERO_DETECTED}}', proc.stdout))
 
                     if diff >= 1.0:
-                        print(
-                            f'TEST PROBLEM LIKELY (test largest error: {diff})')
+                        status = 'TEST PROBLEM LIKELY'
+                    elif against_zero_comparison_tests > 0:
+                        status = 'AGAINST-ZERO COMPARISONS IN ' + \
+                            str(against_zero_comparison_tests) + ' TEST(S)'
                     else:
-                        print(f'OK (test largest error: {diff_match.group(1)})')
+                        status = 'OK'
+
+                    print(status + f' (test largest error: {diff})')
                 else:
                     print(f'OK (no testing run)')
         else:
