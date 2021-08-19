@@ -85,6 +85,8 @@ if __name__ == "__main__":
                                f'PROJECT_NAME={name}',
                                '--env',
                                f'TEST={test}',
+                               '--env',
+                               'COMPILE_ONLY=1',
                                'bin/catapult.sif',
                                'catapult', '-shell', '-file',
                                'bin/synthesize.tcl'],

@@ -6,6 +6,7 @@ set PROJECT_PATH $ALL_PROJECTS_PATH/$PROJECT_NAME
 set PROJECT_FILE_PATH $PROJECT_PATH/$PROJECT_NAME.ccs
 
 set RUN_TEST $::env(TEST)
+set COMPILE_ONLY $::env(COMPILE_ONLY)
 
 if {[catch {project load $PROJECT_FILE_PATH} msg]} {
     set_working_dir $PROJECT_PATH
@@ -19,4 +20,22 @@ go analyze
 source $PROJECT_PATH/tcl/01_compile.tcl
 go compile
 
-if {$RUN_TEST == 1} { flow run /SCVerify/launch_make ./scverify/Verify_orig_cxx_osci.mk {} SIMTOOL=osci sim }
+if {$RUN_TEST == 1} {
+    flow run /SCVerify/launch_make ./scverify/Verify_orig_cxx_osci.mk {} SIMTOOL=osci sim
+}
+
+if {$COMPILE_ONLY == 0} {
+    source $PROJECT_PATH/tcl/02_libraries.tcl
+    go libraries
+
+    source $PROJECT_PATH/tcl/03_assembly.tcl
+    go assembly
+
+    source $PROJECT_PATH/tcl/04_architect.tcl
+    go architect
+
+    source $PROJECT_PATH/tcl/05_schedule.tcl
+    go schedule
+
+    go extract
+}
