@@ -138,31 +138,47 @@ if __name__ == "__main__":
         name = f'SDense{i}' if stress else f'Dense{i}'
         print(f'[{name}] HLS synthesis...', end=' ', flush=True)
 
-        proc_returncode, _ = run_cmd(['singularity', 'exec',
-                                      '--env',
-                                      f'MAIN_PATH={os.getcwd()}',
-                                      '--env',
-                                      f'PROJECT_NAME={name}',
-                                      '--env',
-                                      'TEST=0',
-                                      '--env',
-                                      'COMPILE_ONLY=0',
-                                      'bin/catapult.sif',
-                                      'catapult', '-shell', '-file',
-                                      'bin/synthesize.tcl'],
-                                     name)
-        if proc_returncode == 0:
-            # TODO: Implement log parsing (latency + interval)
-            print('OK')
-        else:
-            errors = True
-            print('FAIL', end='\n\n')
-            continue
+        proc_returncode, proc_out = run_cmd(['singularity', 'exec',
+                                             '--env',
+                                             f'MAIN_PATH={os.getcwd()}',
+                                             '--env',
+                                             f'PROJECT_NAME={name}',
+                                             '--env',
+                                             'TEST=0',
+                                             '--env',
+                                             'COMPILE_ONLY=0',
+                                             'bin/catapult.sif',
+                                             'catapult', '-shell', '-file',
+                                             'bin/synthesize.tcl'],
+                                            name)
 
         solution_path = Path('projects',
                              name,
                              name,
                              'synthesize.v1').absolute()
+
+        hls_results = None
+        synth_results = None
+        impl_results = None
+        export_ip_results = None
+        
+        if proc_returncode == 0:
+            print('OK')
+
+            regex_match = \
+                re.search(r'Processes/Blocks in Design(.+)Timing Report',
+                          proc_out,
+                          flags=re.DOTALL)
+
+            hls_results = \
+                '\n'.join(filter(lambda x: len(x) > 0,
+                                 [s.replace('#', '', 1).strip()
+                                  for s in regex_match.group(1).split('\n')]))
+            print(hls_results)
+        else:
+            errors = True
+            print('FAIL', end='\n\n')
+            continue
 
         if args.rtl_software is not None:
             rtl_activities = RTL_ACTIVITIES[args.rtl_software]
