@@ -1,0 +1,213 @@
+#!/usr/bin/python3
+import subprocess
+import os
+import sys
+import re
+import argparse
+from pathlib import Path
+
+
+def run_cmd(command, log_file_name, cwd=None, env=None):
+    if env is not None:
+        os_env = os.environ.copy()
+        os_env.update(env)
+        env = os_env
+    
+    proc = subprocess.run(command,
+                          env=env,
+                          cwd=cwd,
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.STDOUT,
+                          encoding='utf-8')
+
+    with open(os.path.join('synthesize_logs',
+                           log_file_name + '.log'), 'w') as log_file:
+        log_file.write(proc.stdout)
+        
+    return proc.returncode, proc.stdout
+
+
+def synthesis_vivado(solution_path: Path):
+    # TODO: Implement RTL synthesis with log parsing
+    # (resources used and timing)
+    
+    return {}
+
+
+def place_and_route_vivado(solution_path: Path):
+    # TODO: Implement RTL place & route with log parsing
+    # (resources used and timing)
+    
+    return {}
+
+
+def export_ip_vivado(solution_path: Path, ip_dest: Path, ip_name: str):
+    TO_APPEND = ['set rootDir $outputDir/..',
+                 'ipx::package_project -root_dir $rootDir -vendor cern.ch '
+                 '-library catapult -taxonomy /UserIP -force',
+                 'ipx::create_xgui_files [ipx::current_core]',
+                 'ipx::update_checksums [ipx::current_core]',
+                 'ipx::save_core [ipx::current_core]',
+                 'ipx::check_integrity -quiet [ipx::current_core]',
+                 'ipx::archive_core $::env(DEST)/$::env(NAME).zip '
+                 '[ipx::current_core]']
+
+    vivado_concat_vhdl = solution_path / 'vivado_concat_vhdl'
+    package_ip = vivado_concat_vhdl / 'concat_vhdl_package_ip.tcl'
+
+    with package_ip.open(mode='a') as f:
+        f.write('\n')
+        f.write('\n'.join(TO_APPEND))
+
+    ip_dest.mkdir(parents=True, exist_ok=True)
+
+    proc_returncode, _ = run_cmd(['vivado',
+                                  '-mode',
+                                  'batch',
+                                  '-source',
+                                  str(package_ip)],
+                                 name + '_ip_export',
+                                 cwd=vivado_concat_vhdl,
+                                 env={'DEST': str(ip_dest),
+                                      'NAME': ip_name})
+
+    return {} if proc_returncode == 0 else None
+
+
+RTL_ACTIVITIES = {
+    'vivado': {
+        'synthesis': synthesis_vivado,
+        'place-and-route': place_and_route_vivado,
+        'export-ip': export_ip_vivado
+    }
+}
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Synthesise hls4ml Catapult '
+                                     'projects (i.e. run full HLS synthesis) '
+                                     'and run optional RTL (post-HLS) '
+                                     'activities.')
+    parser.add_argument('nums', metavar='ID', type=str,
+                        nargs='+', help='the IDs of projects to be processed, '
+                        'e.g. 1 2 3 will synthesise Dense001, Dense002 and '
+                        'Dense003 respectively')
+    parser.add_argument('--stress', action='store_true', dest='stress',
+                        help='synthesise stress projects (i.e. starting '
+                        'with SDense) instead of standard ones (i.e. starting '
+                        'with Dense)')
+
+    rtl_group = parser.add_argument_group(title='arguments related to '
+                                          'RTL (post-HLS) activities')
+    rtl_group.add_argument('--rtl-software', choices=['vivado'],
+                           dest='rtl_software', help='RTL software to be used '
+                           '(required if you want to run any RTL activities)')
+    rtl_group.add_argument('--rtl-activity', choices=['synthesize',
+                                                      'place-and-route'],
+                           dest='rtl_activity', help='RTL activity to be '
+                           'performed after HLS synthesis is done')
+    rtl_group.add_argument('--export-ip', metavar='DEST', dest='ip_dest',
+                           help='export HLS-synthesised IPs to a specified '
+                           'directory (it will be created if it does not exist)')
+
+    args = parser.parse_args()
+
+    if (args.rtl_activity is not None or args.ip_dest is not None) and \
+       args.rtl_software is None:
+        parser.error('--rtl-software is required when --rtl-activity or '
+                     '--export-ip is present.')
+    
+    os.chdir(str(Path(__file__).parent.parent))
+
+    stress = args.stress
+    nums = args.nums
+
+    for i in range(len(nums)):
+        digit_count = len(re.search(r'(\d+)', nums[i]).group(1))
+        nums[i] = (3 - digit_count) * '0' + nums[i]
+
+    if not os.path.exists('synthesize_logs'):
+        os.makedirs('synthesize_logs')
+    else:
+        for entry in os.listdir('synthesize_logs'):
+            os.remove(os.path.join('synthesize_logs', entry))
+
+    errors = False
+
+    for i in nums:
+        name = f'SDense{i}' if stress else f'Dense{i}'
+        print(f'[{name}] HLS synthesis...', end=' ', flush=True)
+
+        proc_returncode, _ = run_cmd(['singularity', 'exec',
+                                      '--env',
+                                      f'MAIN_PATH={os.getcwd()}',
+                                      '--env',
+                                      f'PROJECT_NAME={name}',
+                                      '--env',
+                                      'TEST=0',
+                                      '--env',
+                                      'COMPILE_ONLY=0',
+                                      'bin/catapult.sif',
+                                      'catapult', '-shell', '-file',
+                                      'bin/synthesize.tcl'],
+                                     name)
+        if proc_returncode == 0:
+            # TODO: Implement log parsing (latency + interval)
+            print('OK')
+        else:
+            errors = True
+            print('FAIL', end='\n\n')
+            continue
+
+        solution_path = Path('projects',
+                             name,
+                             name,
+                             'synthesize.v1').absolute()
+
+        if args.rtl_software is not None:
+            rtl_activities = RTL_ACTIVITIES[args.rtl_software]
+
+        if args.rtl_activity is not None:
+            print(f'[{name}] RTL synthesis...', end=' ', flush=True)
+            synth_results = rtl_activities['synthesize'](solution_path)
+
+            if synth_results is not None:
+                print('OK')
+            else:
+                errors = True
+                print('FAIL', end='\n\n')
+                continue
+
+            if args.rtl_activity == 'place-and-route':
+                print(f'[{name}] RTL place & route...', end=' ', flush=True)
+                impl_results = rtl_activities['place-and-route'](solution_path)
+
+                if impl_results is not None:
+                    print('OK')
+                else:
+                    errors = True
+                    print('FAIL', end='\n\n')
+                    continue
+
+        if args.ip_dest is not None:
+            print(f'[{name}] RTL IP export...', end=' ', flush=True)
+            export_ip_results = \
+                rtl_activities['export-ip'](solution_path,
+                                            Path(args.ip_dest).absolute(),
+                                            name)
+
+            if export_ip_results is not None:
+                print('OK')
+            else:
+                errors = True
+                print('FAIL')
+
+        print()
+
+    if errors:
+        print('ERROR: Some or all operations have failed!')
+    else:
+        print('SUCCESS: All operations have been performed on all models '
+              'without problems!')
+
+    print(f'See log files in "synthesize_logs" for more details.')

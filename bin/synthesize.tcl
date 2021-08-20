@@ -12,6 +12,13 @@ if {[catch {project load $PROJECT_FILE_PATH} msg]} {
     set_working_dir $PROJECT_PATH
     project new -name $PROJECT_NAME
     project save
+
+    solution new -state new -version v1 dummy
+}
+
+if {[catch {solution new -state new -version v1 synthesize} msg]} {
+    solution remove -solution synthesize.v1 -delete
+    solution new -state new -version v1 synthesize
 }
 
 source $PROJECT_PATH/tcl/00_analyze.tcl
