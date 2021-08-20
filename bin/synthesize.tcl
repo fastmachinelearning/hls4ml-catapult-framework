@@ -45,4 +45,6 @@ if {$COMPILE_ONLY == 0} {
     go schedule
 
     go extract
+
+    solution report -timing true -transcript true
 }
