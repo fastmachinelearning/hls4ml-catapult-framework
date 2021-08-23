@@ -139,6 +139,10 @@ if __name__ == "__main__":
                         help='synthesise stress projects (i.e. starting '
                         'with SDense) instead of standard ones (i.e. starting '
                         'with Dense)')
+    parser.add_argument('--settings', metavar='ASSIGNS', dest='settings',
+                        help='variables to be set for HLS synthesis purposes, '
+                        'in the form of a comma-separated KEY=VALUE list '
+                        '(e.g. "CLOCK_PERIOD=5.0,CLOCK_UNCERTAINTY=0.125")')
 
     rtl_group = parser.add_argument_group(title='arguments related to '
                                           'RTL (post-HLS) activities')
@@ -150,6 +154,12 @@ if __name__ == "__main__":
                            'directory (it will be created if it does not exist)')
 
     args = parser.parse_args()
+
+    if args.settings is None:
+        settings = []
+    else:
+        settings = ['--env', ','.join(map(lambda x: 'HLS_' + x,
+                                          args.settings.split(',')))]
     
     os.chdir(str(Path(__file__).parent.parent))
 
@@ -174,14 +184,11 @@ if __name__ == "__main__":
 
         proc_returncode, proc_out = run_cmd(['singularity', 'exec',
                                              '--env',
-                                             f'MAIN_PATH={os.getcwd()}',
-                                             '--env',
-                                             f'PROJECT_NAME={name}',
-                                             '--env',
-                                             'TEST=0',
-                                             '--env',
-                                             'COMPILE_ONLY=0',
-                                             'bin/catapult.sif',
+                                             f'MAIN_PATH={os.getcwd()},'
+                                             f'PROJECT_NAME={name},'
+                                             'TEST=0,'
+                                             'COMPILE_ONLY=0'] + settings +
+                                             ['bin/catapult.sif',
                                              'catapult', '-shell', '-file',
                                              'bin/synthesize.tcl'],
                                             name)

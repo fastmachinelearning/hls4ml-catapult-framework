@@ -8,6 +8,12 @@ set PROJECT_FILE_PATH $PROJECT_PATH/$PROJECT_NAME.ccs
 set RUN_TEST $::env(TEST)
 set COMPILE_ONLY $::env(COMPILE_ONLY)
 
+foreach var [array names env] {
+    if {[string match "HLS_*" $var]} {
+        set [string range $var 4 [expr {[string length $var] - 1}]] $::env($var)
+    }
+}
+
 if {[catch {project load $PROJECT_FILE_PATH} msg]} {
     set_working_dir $PROJECT_PATH
     project new -name $PROJECT_NAME
