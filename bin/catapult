@@ -2,6 +2,6 @@
 set -e
 CUR_DIR=$(pwd)
 cd /home/mgraczyk/Desktop/Catapult/tmp
-singularity exec ../bin/catapult.sif catapult ${@:1}
+singularity exec --bind /opt/Xilinx:/opt/Xilinx ../bin/catapult.sif catapult ${@:1}
 rm -R /home/mgraczyk/Desktop/Catapult/tmp/* &> /dev/null
 cd $CUR_DIR
