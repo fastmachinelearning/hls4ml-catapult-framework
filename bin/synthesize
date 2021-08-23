@@ -30,15 +30,40 @@ def run_cmd(command, log_file_name, cwd=None, env=None):
 def synthesis_vivado(solution_path: Path):
     # TODO: Implement RTL synthesis with log parsing
     # (resources used and timing)
-    
-    return {}
+    vivado_concat_vhdl = solution_path / 'vivado_concat_vhdl'
+    synth = vivado_concat_vhdl / 'concat_rtl.vhdl.xv'
 
+    proc_returncode, _ = run_cmd(['vivado',
+                                  '-mode',
+                                  'batch',
+                                  '-source',
+                                  str(synth)],
+                                 name + '_rtl_synth',
+                                 cwd=vivado_concat_vhdl)
 
-def place_and_route_vivado(solution_path: Path):
-    # TODO: Implement RTL place & route with log parsing
-    # (resources used and timing)
+    if proc_returncode != 0:
+        return None
+
+    result = {}
+
+    utilization_report_path = vivado_concat_vhdl / 'utilization_synth.rpt'
+    utilization_report = ''
     
-    return {}
+    with utilization_report_path.open(mode='r') as f:
+        for line in f:
+            utilization_report += line
+
+    slice_logic_regex_match = re.search(r'1\. Slice Logic\n-+(.+)\* Warning',
+                                        utilization_report,
+                                        flags=re.DOTALL)
+    
+    result['slice_logic'] = slice_logic_regex_match.group(1).strip()
+
+    dsp_regex_match = re.search(r'3\. DSP\n-+(.+)4\.',
+                                utilization_report, flags=re.DOTALL)
+    result['dsp'] = dsp_regex_match.group(1).strip()
+
+    return result
 
 
 def export_ip_vivado(solution_path: Path, ip_dest: Path, ip_name: str):
@@ -200,6 +225,8 @@ if __name__ == "__main__":
 
                 if impl_results is not None:
                     print('OK')
+                    print(synth_results['slice_logic'])
+                    print(synth_results['dsp'])
                 else:
                     errors = True
                     print('FAIL', end='\n\n')
