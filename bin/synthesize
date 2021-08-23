@@ -99,13 +99,31 @@ def export_ip_vivado(solution_path: Path, ip_dest: Path, ip_name: str):
     return {} if proc_returncode == 0 else None
 
 
-RTL_ACTIVITIES = {
-    'vivado': {
-        'synthesis': synthesis_vivado,
-        'place-and-route': place_and_route_vivado,
-        'export-ip': export_ip_vivado
+def get_rtl_activities(project_path: Path):
+    RTL_ACTIVITIES = {
+        'Vivado': {
+            'synthesize': synthesis_vivado,
+            'export-ip': export_ip_vivado
+        }
     }
-}
+
+    tcl_libraries_path = project_path / 'tcl' / '02_libraries.tcl'
+
+    if not tcl_libraries_path.exists():
+        return None
+    
+    tcl_libraries = ''
+    
+    with tcl_libraries_path.open(mode='r') as f:
+        for line in f:
+            tcl_libraries += line
+
+    regex_match = re.search(r'-rtlsyntool (\S+)', tcl_libraries)
+
+    if regex_match is None:
+        return None
+
+    return RTL_ACTIVITIES.get(regex_match.group(1))
 
 
 if __name__ == "__main__":
@@ -124,23 +142,14 @@ if __name__ == "__main__":
 
     rtl_group = parser.add_argument_group(title='arguments related to '
                                           'RTL (post-HLS) activities')
-    rtl_group.add_argument('--rtl-software', choices=['vivado'],
-                           dest='rtl_software', help='RTL software to be used '
-                           '(required if you want to run any RTL activities)')
-    rtl_group.add_argument('--rtl-activity', choices=['synthesize',
-                                                      'place-and-route'],
-                           dest='rtl_activity', help='RTL activity to be '
-                           'performed after HLS synthesis is done')
+    rtl_group.add_argument('--rtl-synthesize', action='store_const',
+                           const='synthesize', dest='rtl_activity',
+                           help='run RTL synthesis after HLS synthesis is done')
     rtl_group.add_argument('--export-ip', metavar='DEST', dest='ip_dest',
                            help='export HLS-synthesised IPs to a specified '
                            'directory (it will be created if it does not exist)')
 
     args = parser.parse_args()
-
-    if (args.rtl_activity is not None or args.ip_dest is not None) and \
-       args.rtl_software is None:
-        parser.error('--rtl-software is required when --rtl-activity or '
-                     '--export-ip is present.')
     
     os.chdir(str(Path(__file__).parent.parent))
 
@@ -177,6 +186,8 @@ if __name__ == "__main__":
                                              'bin/synthesize.tcl'],
                                             name)
 
+        project_path = Path('projects', name)
+        
         solution_path = Path('projects',
                              name,
                              name,
@@ -205,25 +216,18 @@ if __name__ == "__main__":
             print('FAIL', end='\n\n')
             continue
 
-        if args.rtl_software is not None:
-            rtl_activities = RTL_ACTIVITIES[args.rtl_software]
+        rtl_activities = get_rtl_activities(project_path)
 
-        if args.rtl_activity is not None:
-            print(f'[{name}] RTL synthesis...', end=' ', flush=True)
-            synth_results = rtl_activities['synthesize'](solution_path)
+        if rtl_activities is None:
+            print(f'[{name}] warning: could not determine the RTL tool used, '
+                  'no RTL (post-HLS) activities can be performed.')
 
-            if synth_results is not None:
-                print('OK')
-            else:
-                errors = True
-                print('FAIL', end='\n\n')
-                continue
+        if rtl_activities is not None and args.rtl_activity is not None:
+            if args.rtl_activity == 'synthesize':
+                print(f'[{name}] RTL synthesis...', end=' ', flush=True)
+                synth_results = rtl_activities['synthesize'](solution_path)
 
-            if args.rtl_activity == 'place-and-route':
-                print(f'[{name}] RTL place & route...', end=' ', flush=True)
-                impl_results = rtl_activities['place-and-route'](solution_path)
-
-                if impl_results is not None:
+                if synth_results is not None:
                     print('OK')
                     print(synth_results['slice_logic'])
                     print(synth_results['dsp'])
