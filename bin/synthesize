@@ -51,13 +51,13 @@ def synthesis_vivado(solution_path: Path):
         for line in f:
             utilization_report += line
 
-    slice_logic_regex_match = re.search(r'1\. Slice Logic\n-+(.+)\* Warning',
+    slice_logic_regex_match = re.search(r'1\..+\n-+(.+)\* Warning',
                                         utilization_report,
                                         flags=re.DOTALL)
     
     result['slice_logic'] = slice_logic_regex_match.group(1).strip()
 
-    dsp_regex_match = re.search(r'3\. DSP\n-+(.+)4\.',
+    dsp_regex_match = re.search(r'\n3\..+\n-+(.+)\n4\.',
                                 utilization_report, flags=re.DOTALL)
     result['dsp'] = dsp_regex_match.group(1).strip()
 
