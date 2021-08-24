@@ -28,8 +28,6 @@ def run_cmd(command, log_file_name, cwd=None, env=None):
 
 
 def synthesis_vivado(solution_path: Path):
-    # TODO: Implement RTL synthesis with log parsing
-    # (resources used and timing)
     vivado_concat_vhdl = solution_path / 'vivado_concat_vhdl'
     synth = vivado_concat_vhdl / 'concat_rtl.vhdl.xv'
 
