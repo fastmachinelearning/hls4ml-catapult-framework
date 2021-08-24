@@ -97,13 +97,16 @@ def export_ip_vivado(solution_path: Path, ip_dest: Path, ip_name: str):
     return {} if proc_returncode == 0 else None
 
 
-def get_rtl_activities(project_path: Path):
+def get_rtl_activities(project_path: Path=None, tool: str=None):
     RTL_ACTIVITIES = {
         'Vivado': {
             'synthesize': synthesis_vivado,
             'export-ip': export_ip_vivado
         }
     }
+
+    if tool is not None:
+        return RTL_ACTIVITIES.get(tool)
 
     tcl_libraries_path = project_path / 'tcl' / '02_libraries.tcl'
 
@@ -116,7 +119,7 @@ def get_rtl_activities(project_path: Path):
         for line in f:
             tcl_libraries += line
 
-    regex_match = re.search(r'-rtlsyntool (\S+)', tcl_libraries)
+    regex_match = re.search(r'set RTL_SYN_TOOL (\S+)', tcl_libraries)
 
     if regex_match is None:
         return None
@@ -152,10 +155,18 @@ if __name__ == "__main__":
                            'directory (it will be created if it does not exist)')
 
     args = parser.parse_args()
+    rtl_activities = None
 
     if args.settings is None:
         settings = []
     else:
+        assigns = args.settings.split(',')
+
+        for assign in assigns:
+            if assign.startswith('RTL_SYN_TOOL'):
+                rtl_activities = get_rtl_activities(tool=assign.split('=')[1])
+                break
+        
         settings = ['--env', ','.join(map(lambda x: 'HLS_' + x,
                                           args.settings.split(',')))]
     
@@ -221,11 +232,12 @@ if __name__ == "__main__":
             print('FAIL', end='\n\n')
             continue
 
-        rtl_activities = get_rtl_activities(project_path)
-
         if rtl_activities is None:
-            print(f'[{name}] warning: could not determine the RTL tool used, '
-                  'no RTL (post-HLS) activities can be performed.')
+            rtl_activities = get_rtl_activities(project_path)
+
+            if rtl_activities is None:
+                print(f'[{name}] warning: could not determine the RTL tool '
+                      'used, no RTL (post-HLS) activities can be performed.')
 
         if rtl_activities is not None and args.rtl_activity is not None:
             if args.rtl_activity == 'synthesize':
