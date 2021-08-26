@@ -41,6 +41,7 @@ if {$COMPILE_ONLY == 0} {
     source $PROJECT_PATH/tcl/02_libraries.tcl
     go libraries
 
+    directive set REGISTER_THRESHOLD 10240
     source $PROJECT_PATH/tcl/03_assembly.tcl
     go assembly
 
