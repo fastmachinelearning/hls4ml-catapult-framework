@@ -53,5 +53,6 @@ if {$COMPILE_ONLY == 0} {
 
     go extract
 
+    flow run /SCVerify/launch_make ./scverify/Verify_concat_sim_rtl_vhdl_msim.mk {} SIMTOOL=msim sim
     solution report -timing true -transcript true
 }
