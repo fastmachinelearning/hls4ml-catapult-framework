@@ -259,6 +259,12 @@ if __name__ == "__main__":
                                  [s.replace('#', '', 1).strip()
                                   for s in regex_match.group(1).split('\n')]))
             print(hls_results)
+            print('---')
+            
+            cosim_stats = \
+                re.findall(r'(Info: scverify_top/Monitor:.+)', proc_out)
+
+            print('\n'.join(cosim_stats))
         else:
             errors = True
             print('FAIL', end='\n\n')
