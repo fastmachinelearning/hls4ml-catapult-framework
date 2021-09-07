@@ -412,7 +412,27 @@ def generate_selu_table(table_size, dest_path):
             sep = ", "
 # ------------------------------------------------------------
 
-def run(src, dest, force):
+
+def copy_tcl_files(dest_path):
+    tcl_path = dest_path / 'tcl'
+    tcl_path.mkdir(parents=True)
+
+    template_path = Path(__file__).parent.parent / 'templates'
+
+    FILES = [
+        template_path / '00_analyze.tcl',
+        template_path / '01_compile.tcl',
+        template_path / '02_libraries.tcl',
+        template_path / '03_assembly.tcl',
+        template_path / '04_architect.tcl',
+        template_path / '05_schedule.tcl'
+    ]
+
+    for file_path in FILES:
+        shutil.copy2(file_path, tcl_path) 
+
+
+def run(src, dest, force, table_size):
     src_path = Path(src)
     dest_path = Path(dest)
 
@@ -442,7 +462,6 @@ def run(src, dest, force):
         generate_test_data(src_path, dest_path)
     
         # Step 4: Generate activation tables
-        table_size = 1024
         dest_table_path = create_table_directory(dest_path)
 
         data_bits, exp_bits, inv_bits = get_bits_for_exp_and_inv(dest_path)
@@ -456,6 +475,9 @@ def run(src, dest, force):
         generate_softsign_table(table_size, dest_table_path)
         generate_elu_table(table_size, dest_table_path)
         generate_selu_table(table_size, dest_table_path)
+
+        # Step 5: Put TCL files
+        copy_tcl_files(dest_path)
     
         # Done!
         print_msg('the specified hls4ml Vivado HLS project has been converted '
@@ -478,6 +500,10 @@ if __name__ == '__main__':
     parser.add_argument('--force', action='store_true', dest='force',
                         help='remove the destination directory if it exists '
                         'and is not empty')
+    parser.add_argument('--table-size', metavar='INT', type=int,
+                        default=1024, dest='table_size', help='the number of '
+                        'entries in activation tables to be generated (default: '
+                        '1024)')
 
     args = parser.parse_args()
-    run(args.src, args.dest, args.force)
+    run(args.src, args.dest, args.force, args.table_size)
