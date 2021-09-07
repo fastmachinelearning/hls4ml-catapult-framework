@@ -40,7 +40,8 @@ namespace nnet {
   size_t trace_type_size = sizeof(double);
 }
 
-inline void split(std::string input, std::vector<std::string> &result, const char *delimiter)
+inline void split(std::string input, std::vector<std::string> &result,
+                  const char *delimiter)
 {
   char* cstr=const_cast<char*>(input.c_str());
   char* current;
@@ -73,7 +74,8 @@ inline void convert(T input, std::vector<int> &result)
   result.clear();
 
   while (bits > 0) {
-    result.insert(result.begin(), input(std::min(N - bits + 31, N - 1), N - bits));
+    result.insert(result.begin(), input(std::min(N - bits + 31, N - 1),
+                                        N - bits));
     bits -= 32;
   }
 }
@@ -216,7 +218,8 @@ int main(int argc, char **argv)
   }
 
   fout.close();
-  std::cout << "INFO: Saved inference results to file: " << RESULTS_LOG << std::endl;
+  std::cout << "INFO: Saved inference results to file: " << RESULTS_LOG
+            << std::endl;
 
   return 0;
 }
