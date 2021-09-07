@@ -227,25 +227,18 @@ if __name__ == "__main__":
         export_ip_results = None
         
         if proc_returncode == 0:
-            diff_match = \
-                re.search(r'{{LARGEST_RELATIVE_DIFFERENCE_OVERALL=(.+)}}',
+            cosim_match = \
+                re.search(r'Info: scverify_top/user_tb: '
+                          r'Simulation (PASSED|FAILED)',
                           proc_out)
+            
+            if cosim_match is not None:
+                status = cosim_match.group(1)
 
-            if diff_match is not None:
-                diff = float(diff_match.group(1))
-                against_zero_comparison_tests = \
-                    len(re.findall(
-                        '{{COMPARISON_AGAINST_ZERO_DETECTED}}', proc_out))
-
-                if diff >= 1.0:
-                    status = 'COSIM PROBLEM LIKELY'
-                elif against_zero_comparison_tests > 0:
-                    status = 'AGAINST-ZERO COMPARISONS IN ' + \
-                        str(against_zero_comparison_tests) + ' COSIM TEST(S)'
+                if status == 'PASSED':
+                    print('OK')
                 else:
-                    status = 'OK'
-
-                print(status + f' (cosim largest error: {diff})')
+                    print('COSIM PROBLEM LIKELY')
             else:
                 print(f'OK (no cosim run)')
 
