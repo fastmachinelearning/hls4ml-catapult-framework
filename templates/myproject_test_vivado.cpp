@@ -130,7 +130,7 @@ int main(int argc, char **argv)
       std::vector<std::string> in_nums;
       split(iline, in_nums, ";");
 
-      test_input_t fc1_input[N_INPUT];
+      test_input_t model_in[N_INPUT];
 
       for (int i = 0; i < N_INPUT; i++) {
         std::vector<std::string> int_strs;
@@ -141,7 +141,7 @@ int main(int argc, char **argv)
           ints.push_back(atoi(int_strs[i].c_str()));
         }
 
-        convert<test_input_t>(ints, fc1_input[i]);
+        convert<test_input_t>(ints, model_in[i]);
       }
 
       test_output_t pr[N_OUTPUT];
@@ -164,17 +164,17 @@ int main(int argc, char **argv)
       }
 
       // Run the code
-      test_output_t layer2_out[N_OUTPUT];
+      test_output_t model_out[N_OUTPUT];
 
       unsigned short size_in1,size_out1;
-      myproject(fc1_input,layer2_out,size_in1,size_out1);
+      myproject(model_in,model_out,size_in1,size_out1);
 
       int different = 0;
 
       // Evaluate the results
       std::cout << "Inputs:" << std::endl;
       for (int i = 0; i < N_INPUT; i++) {
-        std::cout << fc1_input[i] << " ";
+        std::cout << model_in[i] << " ";
       }
       std::cout << std::endl;
 
@@ -188,9 +188,9 @@ int main(int argc, char **argv)
 
       std::cout << "Results:" << std::endl;
       for (int i = 0; i < N_OUTPUT; i++) {
-        std::cout << layer2_out[i] << " ";
+        std::cout << model_out[i] << " ";
 
-        if (pr_present && layer2_out[i] != pr[i]) {
+        if (pr_present && model_out[i] != pr[i]) {
           different += 1;
         }
       }
@@ -203,7 +203,7 @@ int main(int argc, char **argv)
       std::vector<std::vector<int> > outputs;
       for (int i = 0; i < N_OUTPUT; i++) {
         std::vector<int> output;
-        convert<test_output_t>(layer2_out[i], output);
+        convert<test_output_t>(model_out[i], output);
         outputs.push_back(output);
       }
 
