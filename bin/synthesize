@@ -1,0 +1,308 @@
+#!/usr/bin/python3
+import subprocess
+import os
+import sys
+import re
+import argparse
+from pathlib import Path
+
+
+def run_cmd(command, log_file_name, cwd=None, env=None):
+    if env is not None:
+        os_env = os.environ.copy()
+        os_env.update(env)
+        env = os_env
+    
+    proc = subprocess.run(command,
+                          env=env,
+                          cwd=cwd,
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.STDOUT,
+                          encoding='utf-8')
+
+    with open(os.path.join('synthesize_logs',
+                           log_file_name + '.log'), 'w') as log_file:
+        log_file.write(proc.stdout)
+        
+    return proc.returncode, proc.stdout
+
+
+def synthesis_vivado(solution_path: Path):
+    vivado_concat_vhdl = solution_path / 'vivado_concat_vhdl'
+    synth = vivado_concat_vhdl / 'concat_rtl.vhdl.xv'
+
+    proc_returncode, _ = run_cmd(['vivado',
+                                  '-mode',
+                                  'batch',
+                                  '-source',
+                                  str(synth)],
+                                 name + '_rtl_synth',
+                                 cwd=vivado_concat_vhdl)
+
+    if proc_returncode != 0:
+        return None
+
+    result = {}
+
+    utilization_report_path = vivado_concat_vhdl / 'utilization_synth.rpt'
+    utilization_report = ''
+    
+    with utilization_report_path.open(mode='r') as f:
+        for line in f:
+            utilization_report += line
+
+    slice_logic_regex_match = re.search(r'1\..+\n-+(.+)\* Warning',
+                                        utilization_report,
+                                        flags=re.DOTALL)
+    
+    result['slice_logic'] = slice_logic_regex_match.group(1).strip()
+
+    dsp_regex_match = re.search(r'\n3\..+\n-+(.+)\n4\.',
+                                utilization_report, flags=re.DOTALL)
+    result['dsp'] = dsp_regex_match.group(1).strip()
+
+    return result
+
+
+def export_ip_vivado(solution_path: Path, ip_dest: Path, ip_name: str):
+    TO_APPEND = ['set rootDir $outputDir/..',
+                 'ipx::package_project -root_dir $rootDir -vendor cern.ch '
+                 '-library catapult -taxonomy /UserIP -force',
+                 'ipx::create_xgui_files [ipx::current_core]',
+                 'ipx::update_checksums [ipx::current_core]',
+                 'ipx::save_core [ipx::current_core]',
+                 'ipx::check_integrity -quiet [ipx::current_core]',
+                 'ipx::archive_core $::env(DEST)/$::env(NAME).zip '
+                 '[ipx::current_core]']
+
+    vivado_concat_vhdl = solution_path / 'vivado_concat_vhdl'
+    package_ip = vivado_concat_vhdl / 'concat_vhdl_package_ip.tcl'
+
+    with package_ip.open(mode='a') as f:
+        f.write('\n')
+        f.write('\n'.join(TO_APPEND))
+
+    ip_dest.mkdir(parents=True, exist_ok=True)
+
+    proc_returncode, _ = run_cmd(['vivado',
+                                  '-mode',
+                                  'batch',
+                                  '-source',
+                                  str(package_ip)],
+                                 name + '_ip_export',
+                                 cwd=vivado_concat_vhdl,
+                                 env={'DEST': str(ip_dest),
+                                      'NAME': ip_name})
+
+    return {} if proc_returncode == 0 else None
+
+
+def get_rtl_activities(project_path: Path=None, tool: str=None):
+    RTL_ACTIVITIES = {
+        'Vivado': {
+            'synthesize': synthesis_vivado,
+            'export-ip': export_ip_vivado
+        }
+    }
+
+    if tool is not None:
+        return RTL_ACTIVITIES.get(tool)
+
+    tcl_libraries_path = project_path / 'tcl' / '02_libraries.tcl'
+
+    if not tcl_libraries_path.exists():
+        return None
+    
+    tcl_libraries = ''
+    
+    with tcl_libraries_path.open(mode='r') as f:
+        for line in f:
+            tcl_libraries += line
+
+    regex_match = re.search(r'set RTL_SYN_TOOL (\S+)', tcl_libraries)
+
+    if regex_match is None:
+        return None
+
+    return RTL_ACTIVITIES.get(regex_match.group(1))
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Synthesise hls4ml Catapult '
+                                     'projects (i.e. run full HLS synthesis) '
+                                     'and run optional RTL (post-HLS) '
+                                     'activities.')
+    parser.add_argument('nums', metavar='ID', type=str,
+                        nargs='+', help='the IDs of projects to be processed, '
+                        'e.g. 1 2 3 will synthesise Dense001, Dense002 and '
+                        'Dense003 respectively (put \'all\' if you want to '
+                        'process all projects)')
+    parser.add_argument('--stress', action='store_true', dest='stress',
+                        help='synthesise stress projects (i.e. starting '
+                        'with SDense) instead of standard ones (i.e. starting '
+                        'with Dense)')
+    parser.add_argument('--settings', metavar='ASSIGNS', dest='settings',
+                        help='variables to be set for HLS synthesis purposes, '
+                        'in the form of a comma-separated KEY=VALUE list '
+                        '(e.g. "CLOCK_PERIOD=5.0,CLOCK_UNCERTAINTY=0.125")')
+
+    rtl_group = parser.add_argument_group(title='arguments related to '
+                                          'RTL (post-HLS) activities')
+    rtl_group.add_argument('--rtl-synthesize', action='store_const',
+                           const='synthesize', dest='rtl_activity',
+                           help='run RTL synthesis after HLS synthesis is done')
+    rtl_group.add_argument('--export-ip', metavar='DEST', dest='ip_dest',
+                           help='export HLS-synthesised IPs to a specified '
+                           'directory (it will be created if it does not exist)')
+
+    args = parser.parse_args()
+    rtl_activities = None
+
+    if args.settings is None:
+        settings = []
+    else:
+        assigns = args.settings.split(',')
+
+        for assign in assigns:
+            if assign.startswith('RTL_SYN_TOOL'):
+                rtl_activities = get_rtl_activities(tool=assign.split('=')[1])
+                break
+        
+        settings = ['--env', ','.join(map(lambda x: 'HLS_' + x,
+                                          args.settings.split(',')))]
+    
+    os.chdir(str(Path(__file__).parent.parent))
+
+    stress = args.stress
+    nums = args.nums
+
+    if len(nums) == 1 and nums[0] == 'all':
+        nums = []
+        pattern = r'^SDense(\S+)$' if stress else r'^Dense(\S+)$'
+
+        for project in os.listdir('projects'):
+            match = re.search(pattern, project)
+            if match is not None:
+                nums.append(match.group(1))
+
+        nums.sort(key=lambda x: (len(x), x))
+
+    for i in range(len(nums)):
+        digit_count = len(re.search(r'(\d+)', nums[i]).group(1))
+        nums[i] = (3 - digit_count) * '0' + nums[i]
+
+    if not os.path.exists('synthesize_logs'):
+        os.makedirs('synthesize_logs')
+    else:
+        for entry in os.listdir('synthesize_logs'):
+            os.remove(os.path.join('synthesize_logs', entry))
+
+    errors = False
+
+    for i in nums:
+        name = f'SDense{i}' if stress else f'Dense{i}'
+        print(f'[{name}] HLS synthesis...', end=' ', flush=True)
+
+        proc_returncode, proc_out = run_cmd(['singularity', 'exec',
+                                             '--env',
+                                             f'MAIN_PATH={os.getcwd()},'
+                                             f'PROJECT_NAME={name},'
+                                             'TEST=0,'
+                                             'COMPILE_ONLY=0'] + settings +
+                                             ['bin/catapult.sif',
+                                             'catapult', '-shell', '-file',
+                                             'bin/synthesize.tcl'],
+                                            name)
+
+        project_path = Path('projects', name)
+        
+        solution_path = Path('projects',
+                             name,
+                             name,
+                             'synthesize.v1').absolute()
+
+        hls_results = None
+        synth_results = None
+        impl_results = None
+        export_ip_results = None
+        
+        if proc_returncode == 0:
+            cosim_match = \
+                re.search(r'Info: scverify_top/user_tb: '
+                          r'Simulation (PASSED|FAILED)',
+                          proc_out)
+            
+            if cosim_match is not None:
+                status = cosim_match.group(1)
+
+                if status == 'PASSED':
+                    print('OK')
+                else:
+                    print('COSIM PROBLEM LIKELY')
+            else:
+                print(f'OK (no cosim run)')
+
+            regex_match = \
+                re.search(r'Processes/Blocks in Design(.+)Timing Report',
+                          proc_out,
+                          flags=re.DOTALL)
+
+            hls_results = \
+                '\n'.join(filter(lambda x: len(x) > 0,
+                                 [s.replace('#', '', 1).strip()
+                                  for s in regex_match.group(1).split('\n')]))
+            print(hls_results)
+            print('---')
+            
+            cosim_stats = \
+                re.findall(r'(Info: scverify_top/Monitor:.+)', proc_out)
+
+            print('\n'.join(cosim_stats))
+        else:
+            errors = True
+            print('FAIL', end='\n\n')
+            continue
+
+        if rtl_activities is None:
+            rtl_activities = get_rtl_activities(project_path)
+
+            if rtl_activities is None:
+                print(f'[{name}] warning: could not determine the RTL tool '
+                      'used, no RTL (post-HLS) activities can be performed.')
+
+        if rtl_activities is not None and args.rtl_activity is not None:
+            if args.rtl_activity == 'synthesize':
+                print(f'[{name}] RTL synthesis...', end=' ', flush=True)
+                synth_results = rtl_activities['synthesize'](solution_path)
+
+                if synth_results is not None:
+                    print('OK')
+                    print(synth_results['slice_logic'])
+                    print(synth_results['dsp'])
+                else:
+                    errors = True
+                    print('FAIL', end='\n\n')
+                    continue
+
+        if args.ip_dest is not None:
+            print(f'[{name}] RTL IP export...', end=' ', flush=True)
+            export_ip_results = \
+                rtl_activities['export-ip'](solution_path,
+                                            Path(args.ip_dest).absolute(),
+                                            name)
+
+            if export_ip_results is not None:
+                print('OK')
+            else:
+                errors = True
+                print('FAIL')
+
+        print()
+
+    if errors:
+        print('ERROR: Some or all operations have failed!')
+    else:
+        print('SUCCESS: All operations have been performed on all models '
+              'without problems!')
+
+    print(f'See log files in "synthesize_logs" for more details.')

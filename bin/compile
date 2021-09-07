@@ -78,25 +78,18 @@ if __name__ == "__main__":
 
         print(f'{name}... ', end='', flush=True)
 
-        filename = None
-
-        for cur_filename in os.listdir(os.path.join('projects', name)):
-            if cur_filename.endswith('.ccs'):
-                filename = cur_filename
-                break
-
-        if filename is None:
-            filename = name + '.ccs'
-
         proc = subprocess.run(['singularity', 'exec',
                                '--env',
-                               f'TCL_PROJECT_NAME={name}',
+                               f'MAIN_PATH={os.getcwd()}',
                                '--env',
-                               f'TCL_PROJECT_PATH={name}/{filename}',
+                               f'PROJECT_NAME={name}',
                                '--env',
                                f'TEST={test}',
+                               '--env',
+                               'COMPILE_ONLY=1',
                                'bin/catapult.sif',
-                               'catapult', '-shell', '-file', 'bin/compile.tcl'],
+                               'catapult', '-shell', '-file',
+                               'bin/synthesize.tcl'],
                               stdout=subprocess.PIPE,
                               stderr=subprocess.STDOUT,
                               encoding='utf-8')
