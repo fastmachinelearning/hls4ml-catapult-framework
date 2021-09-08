@@ -2,10 +2,11 @@
 A framework for developing the hls4ml Catapult backend.
 
 ## Getting started
-1. Clone this repository.
-2. Put a Singularity image containing the Catapult software to the `bin` directory, naming the file `catapult.sif`.
-3. Add the `bin` directory to your `PATH` environmental variable.
-4. Done! You can now run `catapult`, `cconvert`, `compile` and `synthesize` commands from your terminal. If it's your first time with the framework, please continue reading this README.
+1. Make sure that Singularity and Python 3.6+ are present in your setup.
+2. Clone this repository.
+3. Put a Singularity image containing the Catapult software to the `bin` directory, naming the file `catapult.sif`.
+4. Add the `bin` directory to your `PATH` environmental variable.
+5. Done! You can start working with `hls4ml-catapult-framework`. If it's your first time with the framework, please continue reading this README and read `projects/README.md`.
 
 ## Directory structure
 `hls4ml-catapult-framework` executes all of its operations inside the directory where you have cloned the repository (regardless of where you actually run the commands mentioned in "Getting started"). The folder is structured as follows:
@@ -32,7 +33,7 @@ This is a simple Bash script starting the Catapult software. Any arguments provi
 `catapult` assumes that Vivado is installed in the `/opt/Xilinx` directory. If that's not the case, please update line 10 of the script accordingly.
 
 ### cconvert
-This is a Python 3 tool converting an hls4ml Vivado HLS project to its Catapult equivalent, which can be then used by `hls4ml-catapult-framework`. During the conversion process, activation tables are pre-computed, random test inputs are generated and expected test outputs are produced.
+This is a Python tool converting an hls4ml Vivado HLS project to its Catapult equivalent, which can be then used by `hls4ml-catapult-framework`. During the conversion process, activation tables are pre-computed, random test inputs are generated and expected test outputs are produced.
 
 The basic usage is:
 ```
@@ -46,15 +47,69 @@ cconvert /home/abc/hls4ml/project1 /home/abc/hls4ml-catapult-framework/projects/
 ```
 will convert the hls4ml Vivado HLS project stored in `/home/abc/hls4ml/project1` to its Catapult equivalent and save it to `/home/abc/hls4ml-catapult-framework/projects/Dense001`.
 
+**`cconvert` doesn't create Catapult project files automatically. This means you need to run `compile` or `synthesize` after `cconvert` if you want to work with the new project directly in Catapult.**
+
 For more details and available options, you can run either `cconvert -h` or `cconvert --help`.
 
 ### compile
-This is a Python 3 tool running the first two steps of the Catapult flow (i.e. `go analyze` and `go compile`) along with running a C++ testbench where applicable. Use `compile` when you want to check the functional correctness of your project before HLS synthesis.
+This is a Python tool running the first two steps of the Catapult flow (i.e. `go analyze` and `go compile`) along with executing a C++ testbench where applicable. Use `compile` when you want to check the functional correctness of your project before HLS synthesis.
 
 The basic usage is:
 ```
 compile <SPACE-SEPARATED IDs OF THE PROJECTS TO BE PROCESSED>
 ```
-A project ID is the `XXX` part of `DenseXXXy`/`SDenseXXXy` (unless the scripts/tools have been changed). Leading zeroes may be omitted. If no IDs are provided, all projects inside the `projects` directory will be processed.
+A project ID is the `XXXy` part of `DenseXXXy`/`SDenseXXXy` (unless the scripts/tools have been changed). Leading zeroes may be omitted. If no IDs are provided, all projects inside the `projects` directory will be processed.
 
 If you're not sure what `DenseXXXy`/`SDenseXXXy` means, see `projects/README.md`.
+
+For example, running:
+```
+compile 1 2 3Q
+```
+will run the first two steps of the Catapult flow for `Dense001`, `Dense002` and `Dense003Q`.
+
+Catapult outputs are caught by `compile` and saved to a log file in the `compile-logs` directory. `compile-logs` stores only logs from the most recent run of `compile`.
+
+The tool automatically parses the results of running a C++ testbench and presents them in a way where a judgement can be made quickly (i.e. the largest relative error between expected and actual results). However, all testing results should be eventually checked manually by inspecting the produced log file.
+
+For more details and available options, you can run either `compile -h` or `compile --help`.
+
+### synthesize
+This is a Python tool running the entire Catapult flow along with executing a QuestaSIM cosimulation and optionally running an RTL synthesis process. It doesn't run a C++ testbench and parse its results like `compile` does.
+
+The basic usage is:
+```
+synthesize <SPACE-SEPARATED IDs OF THE PROJECTS TO BE PROCESSED>
+```
+Project IDs are parsed in the same way as in `compile`. However, at least 1 ID **must** be provided. If you want to process all projects inside the `projects` directory, put `all` instead of IDs.
+
+If you want to run an RTL synthesis process after synthesising a project, run the command with the `--rtl-synthesize` flag.
+
+For example, running:
+```
+synthesize 1 2 3Q --rtl-synthesize
+```
+will run the entire Catapult flow along with RTL synthesis for `Dense001`, `Dense002` and `Dense003Q`.
+
+Catapult and RTL tool outputs are caught by `synthesize` and saved to a log file in the `synthesize-logs` directory. `synthesize-logs` stores only logs from the most recent run of `synthesize`.
+
+The tool automatically parses the results of running the flow, cosimulation and optionally RTL synthesis and prints the following information:
+* Predicted latency and throughput
+* Cosimulated latency and throughput
+* Overall cosimulation testing results (OK / problem likely)
+* FPGA resource usage (if RTL synthesis is run)
+
+The RTL tool used for RTL synthesis is determined automatically by inspecting `02_libraries.tcl` in a project. The choice can be overridden by running the command with the `--settings RTL_SYN_TOOL=<tool>` option. **Only Vivado is supported at the moment.** Moreover, `synthesize` assumes that the path to the RTL tool is already present in your `PATH` environmental variable.
+
+You can quickly change variable values used by TCL files in a project by running the command with the `--settings K1=V1,K2=V2,K3=V3,...` option, where K1, K2, K3 etc. are variable names and V1, V2, V3 etc. are values of your choice. See `projects/README.md` to get to know how the variables work.
+
+For more details and available options, you can run either `synthesize -h` or `synthesize --help`.
+
+## Issues
+If there is something you don't understand or you have a problem with using the framework, feel free to post an issue in "Issues".
+
+## Contributing
+All contributions are welcome! Please fork the repository, make your changes and create a pull request.
+
+## License
+(to be determined)
