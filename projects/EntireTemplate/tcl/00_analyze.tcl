@@ -1,3 +1,6 @@
+# Put here the code to be executed immediately before running 'go analyze'
+# in Catapult.
+
 options set Input/CppStandard c++11
 options set Input/TargetPlatform x86_64
 solution file add ./myproject.cpp

@@ -1,3 +1,12 @@
+# Put here the code to be executed immediately before running 'go libraries'
+# in Catapult.
+#
+# You must not remove the code responsible for setting RTL_SYN_TOOL as it is
+# used by the 'synthesize' script to determine what RTL synthesis tool should
+# be run after the Catapult flow is finished. If you want to alter it, make
+# sure that the "set RTL_SYN_TOOL" part is still present (it doesn't have to
+# be exactly "set RTL_SYN_TOOL Vivado").
+
 if {![info exists FPGA_LIBRARY]} {
    set FPGA_LIBRARY mgc_Xilinx-VIRTEX-uplus-2L_beh
 }
