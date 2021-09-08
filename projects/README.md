@@ -37,5 +37,11 @@ if {![info exists <VARIABLE_NAME>]} {
 }
 ```
 
-
 You must pay special attention to `RTL_SYN_TOOL` in `02_libraries.tcl`. Its default value is used by `synthesize` for determining what RTL tool should be used for RTL synthesis. Therefore, you should not remove or rename that variable unless `synthesize` has been changed.
+
+### Project examples
+The following project examples are provided:
+* `EntireTemplate`
+* `Dense019`
+
+See `README.md` inside both directories for more information about the projects. These are real projects, so they can also be used for the Catapult backend R&D.
