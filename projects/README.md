@@ -12,6 +12,8 @@ Every project directory must have the following contents:
 * `tb_data`: a folder with `tb_input_features.dat` containing test inputs and `tb_output_predictions.dat` containing expected outputs (usually produced by `cconvert`).
 * `tcl`: a folder with TCL files (see the next section for the details).
 
+`EntireTemplate` (provided here) is an exception to this rule.
+
 ### TCL files
 Every project must have the following TCL files in the `tcl` directory:
 * `00_analyze.tcl`: executed immediately before `go analyze` in Catapult.
