@@ -1,3 +1,6 @@
+# Put here the code to be executed immediately before running 'go assembly'
+# in Catapult.
+
 if {![info exists CLOCK_PERIOD]} {
    set CLOCK_PERIOD 5.0
 }
