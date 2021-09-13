@@ -4,7 +4,7 @@ A framework for developing the hls4ml Catapult backend.
 ## Getting started
 1. Make sure that Singularity and Python 3.6+ are present in your setup.
 2. Clone this repository.
-3. Put a Singularity image containing the Catapult software to the `bin` directory, naming the file `catapult.sif`.
+3. Put a Singularity image containing **both** Catapult and QuestaSIM to the `bin` directory, naming the file `catapult.sif`.
 4. Add the `bin` directory to your `PATH` environmental variable.
 5. Done! You can start working with `hls4ml-catapult-framework`. If it's your first time with the framework, please continue reading this README and read `projects/README.md`.
 
