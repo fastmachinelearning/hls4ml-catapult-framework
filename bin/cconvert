@@ -59,8 +59,37 @@ def copy_files(src_path, dest_path):
             shutil.copy2(path, dest_path / dest_dir)
 
 
-def get_weight_str(dest_path):
-    pass
+def get_weight_str(src_path):
+    parameters_path = src_path / 'firmware' / 'parameters.h'
+    parameters = get_string_from_file(parameters_path)
+
+    weight_includes = re.search(r'//hls-fpga-machine-learning insert weights\n'
+                                r'((?:\#include ".+"\n)+)',
+                                parameters).group(1)
+    weight_paths = re.findall(r'#include "(.+)"\n', weight_includes)
+
+    non_synthesis_parts = []
+    synthesis_parts = []
+    
+    for path in weight_paths:
+        weight_path = src_path / 'firmware' / path
+        specific_weights = get_string_from_file(weight_path)
+
+        match = re.search(r'#ifndef __SYNTHESIS__\n(.+?)\n#else\n(.+?)\n#endif',
+                          specific_weights, flags=re.DOTALL)
+
+        non_synthesis_parts.append(match.group(1))
+        synthesis_parts.append(match.group(2))
+    
+    weights_str = '// Weights start\n\n'
+    weights_str += '#ifndef __SYNTHESIS__\n'
+    weights_str += '\n'.join(non_synthesis_parts)
+    weights_str += '\n#else\n'
+    weights_str += '\n'.join(synthesis_parts)
+    weights_str += '\n#endif\n\n'
+    weights_str += '// Weights end'
+
+    return weights_str
 
 
 def replace_vivado(dest_path, weight_str):
@@ -467,7 +496,7 @@ def run(src, dest, force, table_size):
         copy_files(src_path, dest_path)
 
         # Step 2: Get weights to be inserted into myproject.cpp
-        weight_str = get_weight_str(dest_path)
+        weight_str = get_weight_str(src_path)
         
         # Step 3: Replace Vivado-specific parts with Catapult ones
         replace_vivado(dest_path, weight_str)
