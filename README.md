@@ -9,7 +9,7 @@ A framework for developing the hls4ml Catapult backend.
 5. Done! You can start working with `hls4ml-catapult-framework`. If it's your first time with the framework, please continue reading this README and read `projects/README.md`.
 
 ## Directory structure
-`hls4ml-catapult-framework` executes all of its operations inside the directory where you have cloned the repository (regardless of where you actually run the commands mentioned in "Getting started"). The folder is structured as follows:
+`hls4ml-catapult-framework` always executes all of its operations inside the directory where you have cloned the repository. The folder is structured as follows:
 * `bin`: all executable scripts/tools are stored here.
 * `cpp-src`: the C++ code of the hls4ml Catapult backend is stored here.
 * `projects`: all hls4ml Catapult projects are stored here.
@@ -25,7 +25,7 @@ The framework works with hls4ml Catapult projects stored inside the `projects` d
 Currently, the recommended way of making a new hls4ml Catapult project is converting its Vivado HLS equivalent by running `cconvert`. The following section describes how to use it.
 
 ## Tools
-The framework has the following tools/scripts that can be used: `catapult`, `cconvert`, `compile` and `synthesize`.
+The framework has the following tools/scripts that can be used: `catapult`, `cconvert`, `compile` and `synthesize`. If you have followed the "Getting started" instructions carefully, you will be able to run these commands anywhere in your terminal (the tools/scripts will still do their activities in the directory where you have cloned the repository).
 
 ### catapult
 This is a simple Bash script starting the Catapult software. Any arguments provided to it are passed to Catapult.
@@ -33,7 +33,7 @@ This is a simple Bash script starting the Catapult software. Any arguments provi
 `catapult` assumes that Vivado is installed in the `/opt/Xilinx` directory. If that's not the case, please update line 10 of the script accordingly.
 
 ### cconvert
-This is a Python tool converting an hls4ml Vivado HLS project to its Catapult equivalent, which can be then used by `hls4ml-catapult-framework`. During the conversion process, activation tables are pre-computed, random test inputs are generated and expected test outputs are produced.
+This is a Python tool converting an hls4ml Vivado HLS project to its Catapult equivalent, which can be then used by `hls4ml-catapult-framework`. During the conversion process, activation tables are pre-computed, random test inputs are generated and expected test outputs are produced by running the Vivado HLS testbench.
 
 The basic usage is:
 ```
