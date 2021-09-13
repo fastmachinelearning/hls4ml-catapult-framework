@@ -59,11 +59,17 @@ def copy_files(src_path, dest_path):
             shutil.copy2(path, dest_path / dest_dir)
 
 
-def replace_vivado(dest_path):
+def get_weight_str(dest_path):
+    pass
+
+
+def replace_vivado(dest_path, weight_str):
     # Process myproject.cpp
     myproject_path = dest_path / 'myproject.cpp'
     myproject = get_string_from_file(myproject_path)
     myproject = replace(myproject, r'#pragma', '//#pragma')
+    myproject = replace(myproject, r'void myproject',
+                        f'{weight_str}\n\nvoid myproject')
     save(myproject, myproject_path)
 
     # Process myproject.h
@@ -460,13 +466,16 @@ def run(src, dest, force, table_size):
         # Step 1: Copy the files
         copy_files(src_path, dest_path)
 
-        # Step 2: Replace Vivado-specific parts with Catapult ones
-        replace_vivado(dest_path)
+        # Step 2: Get weights to be inserted into myproject.cpp
+        weight_str = get_weight_str(dest_path)
+        
+        # Step 3: Replace Vivado-specific parts with Catapult ones
+        replace_vivado(dest_path, weight_str)
 
-        # Step 3: Generate test data
+        # Step 4: Generate test data
         generate_test_data(src_path, dest_path)
     
-        # Step 4: Generate activation tables
+        # Step 5: Generate activation tables
         dest_table_path = create_table_directory(dest_path)
 
         data_bits, exp_bits, inv_bits = get_bits_for_exp_and_inv(dest_path)
@@ -481,7 +490,7 @@ def run(src, dest, force, table_size):
         generate_elu_table(table_size, dest_table_path)
         generate_selu_table(table_size, dest_table_path)
 
-        # Step 5: Put TCL files
+        # Step 6: Put TCL files
         copy_tcl_files(dest_path)
     
         # Done!
