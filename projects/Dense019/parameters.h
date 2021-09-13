@@ -11,6 +11,8 @@
 #include "nnet_utils/nnet_dense.h"
 #include "nnet_utils/nnet_dense_compressed.h"
 #include "nnet_utils/nnet_dense_stream.h"
+ 
+//hls-fpga-machine-learning insert weights: see myproject.cpp
 
 //hls-fpga-machine-learning insert layer-config
 // fc1
@@ -19,7 +21,7 @@ struct config2 : nnet::dense_config {
     static const unsigned n_out = N_LAYER_2;
     static const unsigned io_type = nnet::io_parallel;
     static const unsigned strategy = nnet::latency;
-    static const unsigned reuse_factor = 2;
+    static const unsigned reuse_factor = 1;
     static const unsigned n_zeros = 0;
     static const unsigned n_nonzeros = 320;
     static const bool store_weights_in_bram = false;
@@ -36,7 +38,7 @@ struct relu_config3 : nnet::activ_config {
     static const unsigned n_in = N_LAYER_2;
     static const unsigned table_size = 1024;
     static const unsigned io_type = nnet::io_parallel;
-    static const unsigned reuse_factor = 2;
+    static const unsigned reuse_factor = 1;
     typedef ac_fixed<18,8,true> table_t;
 };
 
@@ -46,7 +48,7 @@ struct config4 : nnet::dense_config {
     static const unsigned n_out = N_LAYER_4;
     static const unsigned io_type = nnet::io_parallel;
     static const unsigned strategy = nnet::latency;
-    static const unsigned reuse_factor = 2;
+    static const unsigned reuse_factor = 1;
     static const unsigned n_zeros = 0;
     static const unsigned n_nonzeros = 100;
     static const bool store_weights_in_bram = false;
@@ -63,7 +65,7 @@ struct softmax_config5 : nnet::activ_config {
     static const unsigned n_in = N_LAYER_4;
     static const unsigned table_size = 1024;
     static const unsigned io_type = nnet::io_parallel;
-    static const unsigned reuse_factor = 2;
+    static const unsigned reuse_factor = 1;
     static const nnet::softmax_implementation implementation = nnet::softmax_implementation::latency;
     typedef ac_fixed<18,8,true,AC_RND,AC_SAT> exp_table_t;
     typedef ac_fixed<18,8,true,AC_RND,AC_SAT> inv_table_t;

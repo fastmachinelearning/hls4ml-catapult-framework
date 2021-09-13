@@ -17,7 +17,7 @@ typedef ac_fixed<16,6,true> layer2_t;
 typedef ac_fixed<16,6,true> fc1_weight_t;
 typedef ac_fixed<16,6,true> fc1_bias_t;
 typedef ac_fixed<16,6,true> fc1_relu_default_t;
-typedef ac_fixed<16,6,true,AC_RND,AC_SAT> layer3_t;
+typedef ac_fixed<16,6,true> layer3_t;
 typedef ac_fixed<16,6,true> layer4_t;
 typedef ac_fixed<16,6,true> fc2_weight_t;
 typedef ac_fixed<16,6,true> fc2_bias_t;
