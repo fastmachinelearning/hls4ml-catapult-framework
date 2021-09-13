@@ -133,6 +133,11 @@ def replace_vivado(dest_path, weight_str):
     parameters = replace(parameters, r'ap_uint<(\d+)(.*?)>',
                          r'ac_int<\1,false\2>')
     parameters = replace(parameters, r'AP_', 'AC_')
+    parameters = replace(parameters, r'#include "weights/.+"\n', '')
+    parameters = replace(parameters,
+                         r'//hls-fpga-machine-learning insert weights',
+                         '//hls-fpga-machine-learning insert weights: '
+                         'see myproject.cpp')
     save(parameters, parameters_path)
 
 
