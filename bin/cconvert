@@ -69,17 +69,26 @@ def get_weight_str(src_path):
     weight_paths = re.findall(r'#include "(.+)"\n', weight_includes)
 
     non_synthesis_parts = []
-    synthesis_parts = []
+    weight_txt_paths = []
     
     for path in weight_paths:
         weight_path = src_path / 'firmware' / path
         specific_weights = get_string_from_file(weight_path)
 
-        match = re.search(r'#ifndef __SYNTHESIS__\n(.+?)\n#else\n(.+?)\n#endif',
+        match = re.search(r'#ifndef __SYNTHESIS__\n(.+?)\n#else\n.+?\n#endif',
                           specific_weights, flags=re.DOTALL)
 
         non_synthesis_parts.append(match.group(1))
-        synthesis_parts.append(match.group(2))
+
+        weight_txt_paths.append(path[:-1] + 'txt')
+
+    synthesis_parts = []
+
+    for i in range(len(non_synthesis_parts)):
+        synthesis_parts.append(non_synthesis_parts[i][:-1] +
+                               ' = {\n'
+                               f'#include "{weight_txt_paths[i]}"'
+                               '\n};')
     
     weights_str = '// Weights start\n\n'
     weights_str += '#ifndef __SYNTHESIS__\n'
