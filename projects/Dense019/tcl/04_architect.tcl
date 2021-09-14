@@ -2,12 +2,12 @@
 # in Catapult.
 
 
-# Uncomment the region below (*) and comment the region afterwards (**) if you
+# Uncomment the region below (**) and comment the region afterwards (*) if you
 # want to synthesise Dense019 as a connection of blocks. You can set IIs/RFs
-# through PIPELINE_INIT_INTERVAL (see the comment inside the (*) region).
+# through PIPELINE_INIT_INTERVAL (see the comment inside the (**) region).
 
 
-### Region (*) starts
+### Region (**) starts
 # # Instruct Catapult to synthesise all layers/blocks with the area in mind.
 # directive set /myproject/layer1/core -DESIGN_GOAL Area
 # directive set /myproject/layer2/core -DESIGN_GOAL Area
@@ -52,16 +52,16 @@
 # # Without setting this directive, the cosimulated latency is much larger than
 # # the predicted one.
 # directive set /myproject/layer4/core/main -PIPELINE_STALL_MODE bubble
-### Region (*) ends
+### Region (**) ends
 
 
-# Uncomment the region below (**) and comment the region beforehand (**) if you
+# Uncomment the region below (*) and comment the region beforehand (**) if you
 # want to synthesise Dense019 as an entire model (i.e. without using any blocks).
 # You can set II/RF through PIPELINE_INIT_INTERVAL (see the comment inside the
-# (**) region).
+# (*) region).
 
 
-### Region (**) starts
+### Region (*) starts
 # # Set II/RF for the entire model here. PIPELINE_INIT_INTERVAL = X means
 # # II = RF = X.
 # directive set /myproject/core/main -PIPELINE_INIT_INTERVAL 1
@@ -80,7 +80,7 @@
 # directive set /myproject/core/Result#1 -UNROLL yes
 # directive set /myproject/core/SoftmaxLatencyExp -UNROLL yes
 # directive set /myproject/core/SoftmaxLatencyCalc -UNROLL yes
-### Region (**) ends
+### Region (*) ends
 
 
 # DO NOT LEAVE BOTH REGIONS UNCOMMENTED!
