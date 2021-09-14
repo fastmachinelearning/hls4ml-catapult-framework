@@ -41,7 +41,7 @@ If you choose not to use `synthesize`, remember to set the `REGISTER_THRESHOLD` 
 ### Performance and resource usage metrics as of 14/09/2021 with the same RF applied to all layers
 The following graphs show various performance and resource usage metrics for Dense019 synthesised with Vivado HLS, Catapult HLS with no blocks (i.e. option 1) and Catapult HLS with blocks (i.e. option 2).
 
-In all cases, the synthesis was done by Catapult 10.5c/896140 for the Xilinx `xcvu9p-flgb2104-2L-e` FPGA with the clock period of 5 ns and 0.625 ns uncertainty. The cosimulation was done with QuestaSim 2020.4 and the resource usage metrics were obtained from the Vivado 2020.1 logic synthesis process.
+In all cases, the synthesis was done by Vivado HLS 2020.1 or Catapult 10.5c/896140 for the Xilinx `xcvu9p-flgb2104-2L-e` FPGA with the clock period of 5 ns and 0.625 ns uncertainty. The cosimulation was done with the cosim function in Vivado HLS or QuestaSim 2020.4 and the resource usage metrics were obtained from the Vivado 2020.1 logic synthesis process.
 
 The same ReuseFactor was applied to the entire model / all layers in the model.
 
@@ -61,3 +61,27 @@ The same ReuseFactor was applied to the entire model / all layers in the model.
 ![Latency from cosimulation](https://user-images.githubusercontent.com/24892582/133291571-ffde6354-cf50-4a73-9b49-167984f770cf.png)
 
 ![Throughput from cosimulation](https://user-images.githubusercontent.com/24892582/133291592-7c06c252-16e1-4c41-a4e8-e2e19ca75118.png)
+
+### Performance and resource usage metrics as of 14/09/2021 with different RF applied to layers
+The following graphs show various performance and resource usage metrics for Dense019 synthesised with Vivado HLS and Catapult HLS with blocks (i.e. option 2).
+
+In all cases, the synthesis was done by Vivado HLS 2020.1 or Catapult 10.5c/896140 for the Xilinx `xcvu9p-flgb2104-2L-e` FPGA with the clock period of 5 ns and 0.625 ns uncertainty. The cosimulation was done with the cosim function in Vivado HLS or QuestaSim 2020.4 and the resource usage metrics were obtained from the Vivado 2020.1 logic synthesis process.
+
+All activation layers had ReuseFactor = 1. For other layers, the notation "X / Y" means "ReuseFactor = X for the first Dense layer and ReuseFactor = Y for the second Dense layer".
+
+#### Resource usage (LUTs, FFs, DSPs)
+![LUT](https://user-images.githubusercontent.com/24892582/133293889-55df8dd2-a850-4355-9c9d-0300511e7359.png)
+
+![FF](https://user-images.githubusercontent.com/24892582/133294007-4f3aedeb-8948-463f-9d26-03b5bbe80334.png)
+
+![DSP](https://user-images.githubusercontent.com/24892582/133294017-9d173d53-bafd-48db-b290-ecffdcc0f9f8.png)
+
+#### Predicted performance
+![Predicted latency](https://user-images.githubusercontent.com/24892582/133294054-ee1acb1c-b080-4394-917a-dd524ca42cd7.png)
+
+![Predicted throughput](https://user-images.githubusercontent.com/24892582/133294059-c35a2e08-017b-487c-9af9-617fddaf7d0b.png)
+
+#### Performance resulting from cosimulation
+![Latency from cosimulation](https://user-images.githubusercontent.com/24892582/133294106-15d1941f-c404-4967-9cf6-3262f90e0408.png)
+
+![Throughput from cosimulation](https://user-images.githubusercontent.com/24892582/133294128-6adfd7f6-aa88-4ba5-9762-1f9173bca353.png)
