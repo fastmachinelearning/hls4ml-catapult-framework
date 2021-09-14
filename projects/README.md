@@ -7,7 +7,7 @@ All hls4ml Catapult project directories should be put here. Unless the scripts h
 ### Project structure
 Every project directory must have the following contents:
 * `activation_tables`: a folder with header files containing pre-computed activation tables (usually produced by `cconvert`).
-* `myproject.cpp`: a C++ source code file with the main function.
+* `myproject.cpp`: a C++ source code file with the main function `myproject()`.
 * `myproject_test.cpp`: a C++ source code file calling a testbench.
 * `tb_data`: a folder with `tb_input_features.dat` containing test inputs and `tb_output_predictions.dat` containing expected outputs (usually produced by `cconvert`).
 * `tcl`: a folder with TCL files (see the next section for the details).
