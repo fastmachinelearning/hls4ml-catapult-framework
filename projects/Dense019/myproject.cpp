@@ -46,6 +46,8 @@ fc2_bias_t b4[5] = {
 
 // Weights end
 
+// Layers modelled as blocks start
+
 template<class T, int N>
 struct channel_array {
    T arr[N]; 
@@ -99,6 +101,8 @@ void CCS_BLOCK(layer4)(
     const_size_out_1 = N_LAYER_4;
 }
 
+// Layers modelled as blocks end
+
 void myproject(
     input_t fc1_input[N_INPUT_1_1],
     result_t layer5_out[N_LAYER_4],
@@ -106,14 +110,9 @@ void myproject(
     unsigned short &const_size_out_1
 ) {
 
-    //hls-fpga-machine-learning insert IO
-    const_size_in_1 = N_INPUT_1_1;
-    const_size_out_1 = N_LAYER_4;
-
 #ifndef __SYNTHESIS__
     static bool loaded_weights = false;
     if (!loaded_weights) {
-        //hls-fpga-machine-learning insert load weights
         nnet::load_weights_from_txt<fc1_weight_t, 320>(w2, "w2.txt");
         nnet::load_weights_from_txt<fc1_bias_t, 20>(b2, "b2.txt");
         nnet::load_weights_from_txt<fc2_weight_t, 100>(w4, "w4.txt");
@@ -122,23 +121,32 @@ void myproject(
     }
 #endif
 
-    // ****************************************
-    // NETWORK INSTANTIATION
-    // ****************************************
+    // Uncomment the region below (*) and comment the region afterwards (**) if
+    // you want to synthesise Dense019 as an entire model (i.e. without using any
+    // blocks).
 
-    //hls-fpga-machine-learning insert layers
+    /*
+    // Region (*)
+    const_size_in_1 = N_INPUT_1_1;
+    const_size_out_1 = N_LAYER_4;
 
-    // layer2_t layer2_out[N_LAYER_2];
-    // nnet::dense<input_t, layer2_t, config2>(fc1_input, layer2_out, w2, b2); // fc1
+    layer2_t layer2_out[N_LAYER_2];
+    nnet::dense<input_t, layer2_t, config2>(fc1_input, layer2_out, w2, b2); // fc1
 
-    // layer3_t layer3_out[N_LAYER_2];
-    // nnet::relu<layer2_t, layer3_t, relu_config3>(layer2_out, layer3_out); // fc1_relu
+    layer3_t layer3_out[N_LAYER_2];
+    nnet::relu<layer2_t, layer3_t, relu_config3>(layer2_out, layer3_out); // fc1_relu
 
-    // layer4_t layer4_out[N_LAYER_4];
-    // nnet::dense<layer3_t, layer4_t, config4>(layer3_out, layer4_out, w4, b4); // fc2
+    layer4_t layer4_out[N_LAYER_4];
+    nnet::dense<layer3_t, layer4_t, config4>(layer3_out, layer4_out, w4, b4); // fc2
 
-    // nnet::softmax<layer4_t, result_t, softmax_config5>(layer4_out, layer5_out); // fc2_softmax
+    nnet::softmax<layer4_t, result_t, softmax_config5>(layer4_out, layer5_out); // fc2_softmax
+    */
 
+    // Uncomment the region below (**) and comment the region beforehand (*) if
+    // you want to synthesise Dense019 as a connection of blocks.
+
+    /*
+    // Region (**)
     static ac_channel<channel_array<layer2_t, N_LAYER_2> > layer2_out;
     static ac_channel<channel_array<layer3_t, N_LAYER_2> > layer3_out;
     static ac_channel<channel_array<layer4_t, N_LAYER_4> > layer4_out;
@@ -147,4 +155,7 @@ void myproject(
     layer2(layer2_out, layer3_out);
     layer3(layer3_out, layer4_out);
     layer4(layer4_out, layer5_out, const_size_in_1, const_size_out_1);
+    */
+
+    // DO NOT LEAVE BOTH REGIONS UNCOMMENTED!
 }
