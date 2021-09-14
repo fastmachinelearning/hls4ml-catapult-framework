@@ -60,6 +60,7 @@ def copy_files(src_path, dest_path):
 
 
 def get_weight_str(src_path):
+    # Parse parameters.h to get the weight header files used
     parameters_path = src_path / 'firmware' / 'parameters.h'
     parameters = get_string_from_file(parameters_path)
 
@@ -68,6 +69,8 @@ def get_weight_str(src_path):
                                 parameters).group(1)
     weight_paths = re.findall(r'#include "(.+)"\n', weight_includes)
 
+    # Parse the weight header files and return the weight setup code to be
+    # eventually inserted directly into myproject.cpp
     non_synthesis_parts = []
     weight_txt_paths = []
     
