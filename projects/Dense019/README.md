@@ -37,3 +37,25 @@ This list is not guaranteed to contain the optimal optimisations, so you are wel
 4. If you want to run the entire Catapult flow instead, run `synthesize` on this project.
 
 If you choose not to use `synthesize`, remember to set the `REGISTER_THRESHOLD` directive in Catapult to a high value (e.g. 10240) before running `go assembly`.
+
+### Performance and resource usage metrics as of 14/09/2021 with the same RF applied to all layers
+The following graphs show various performance and resource usage metrics for Dense019 synthesised with Vivado HLS, Catapult HLS with no blocks (i.e. option 1) and Catapult HLS with blocks (i.e. option 2).
+
+In all cases, the synthesis was done for the Xilinx `xcvu9p-flgb2104-2L-e` FPGA with the clock period of 5 ns and 0.625 ns uncertainty. The same ReuseFactor was applied to the entire model / all layers in the model.
+
+#### Resource usage (LUTs, FFs, DSPs)
+![LUT](https://user-images.githubusercontent.com/24892582/133286572-7715a779-f442-4c20-8569-ecad559ab0cf.png)
+
+![FF](https://user-images.githubusercontent.com/24892582/133289920-87ae0ad5-ea51-4d0a-9054-49be6400907b.png)
+
+![DSP](https://user-images.githubusercontent.com/24892582/133287349-7ca36837-b302-4e5d-afba-5fc312b63658.png)
+
+#### Predicted performance
+![Predicted latency](https://user-images.githubusercontent.com/24892582/133290419-223405a3-7a31-4179-9f2c-3709f30daa52.png)
+
+![Predicted throughput](https://user-images.githubusercontent.com/24892582/133290443-676ce406-9e17-451b-a157-5917308cbb21.png)
+
+#### Performance resulting from cosimulation
+![Latency from cosimulation](https://user-images.githubusercontent.com/24892582/133290489-7271b343-457e-45db-b0da-8b0fc7300bb0.png)
+
+![Throughput from cosimulation](https://user-images.githubusercontent.com/24892582/133290504-3e5c1e53-2bec-495a-a191-98ec384a60fa.png)
