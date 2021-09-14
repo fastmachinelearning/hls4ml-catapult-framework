@@ -36,4 +36,4 @@ This list is not guaranteed to contain the optimal optimisations, so you are wel
 3. If you want to work with the project directly in Catapult, run `compile` on this project and then open `Dense019` in Catapult.
 4. If you want to run the entire Catapult flow instead, run `synthesize` on this project.
 
-If you choose not to use the framework tools, remember to set the `REGISTER_THRESHOLD` directive in Catapult to a high value (e.g. 10240) before running `go assembly`.
+If you choose not to use `synthesize`, remember to set the `REGISTER_THRESHOLD` directive in Catapult to a high value (e.g. 10240) before running `go assembly`.
