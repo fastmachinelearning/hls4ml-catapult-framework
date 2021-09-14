@@ -15,11 +15,20 @@ There are two ways of synthesising this model:
 
 Option 1 allows for setting RF for the entire model **only**, while option 2 allows for setting RF for each layer separately. Both ways come with their pros and cons:
 * With option 1, Catapult can apply optimisations on an entire model, including in-between layers, at the cost of smaller RF flexibility and harder analysis for humans (due to no distinction between layers in statistics produced by Catapult).
-* With option 2, there is larger RF flexibility, different optimisations can be set for different layers and analysis is easier for humans (due to a clear distinction between layers). The cost is a performance and resource overhead of using blocks (tweaks have been applied to mitigate this as much as possible) along with potential difficulties to apply optimisations in-between layers.
+* With option 2, there is larger RF flexibility, different optimisations can be set for different layers and analysis is easier for humans (due to a clear distinction between layers). The cost is a performance and resource overhead of using blocks along with potential difficulties to apply optimisations in-between layers.
 
 In order to use option 1, you need to uncomment the (\*) region in `tcl/04_architect.tcl` and `myproject.cpp` along with commenting the (\*\*) region there. Similarly, to use option 2, you need to uncomment the (\*\*) region and comment the (\*) one.
 
 Those two files have comments pointing exactly where the regions are and explaining how to set II/RF. You can also tweak the code itself and/or other directives if you wish.
+
+#### Tweaks applied to mitigate the performance and resource overhead in option 2
+By inspecting `tcl/04_architect.tcl` and `myproject.cpp`, you will see that the following optimisations have been applied to option 2 to mitigate as much as possible the performance and resource overhead of using blocks:
+* `ac_channel` is flattened in all blocks (e.g. one 320-bit channel is used instead of ten 32-bit channels).
+* `const_size_*` variable assignments are moved out of `myproject()` to the last block in the pipeline. Without this tweak, Catapult would not figure out automatically what optimisations should be applied to `myproject()`, leaving this task to be done manually.
+* The `FIFO_DEPTH` directive is set to 0 in all blocks to reduce the FIFO structures to a minimum.
+* The `PIPELINE_STALL_MODE` directive is set to `bubble` in the last layer so that it does not stall in case of no inputs. Without this tweak, the cosimulated latency is much larger than the predicted one.
+
+This list is not guaranteed to contain the optimal optimisations, so you are welcome to research further possibilities of reducing the block overhead.
 
 ### Quick start
 1. Choose which synthesis option you want to use (see the section above).
