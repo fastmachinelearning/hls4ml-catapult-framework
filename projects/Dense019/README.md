@@ -46,16 +46,16 @@ In all cases, the synthesis was done for the Xilinx `xcvu9p-flgb2104-2L-e` FPGA 
 #### Resource usage (LUTs, FFs, DSPs)
 ![LUT](https://user-images.githubusercontent.com/24892582/133286572-7715a779-f442-4c20-8569-ecad559ab0cf.png)
 
-![FF](https://user-images.githubusercontent.com/24892582/133289920-87ae0ad5-ea51-4d0a-9054-49be6400907b.png)
+![FF](https://user-images.githubusercontent.com/24892582/133291499-72cc87ab-86c3-45d2-9003-2cea436bc05d.png)
 
 ![DSP](https://user-images.githubusercontent.com/24892582/133287349-7ca36837-b302-4e5d-afba-5fc312b63658.png)
 
 #### Predicted performance
-![Predicted latency](https://user-images.githubusercontent.com/24892582/133290419-223405a3-7a31-4179-9f2c-3709f30daa52.png)
+![Predicted latency](https://user-images.githubusercontent.com/24892582/133291522-64f89538-ab9c-466f-bb1e-b3ba4d11ff5e.png)
 
-![Predicted throughput](https://user-images.githubusercontent.com/24892582/133290443-676ce406-9e17-451b-a157-5917308cbb21.png)
+![Predicted throughput](https://user-images.githubusercontent.com/24892582/133291542-7c454b20-9b03-435c-81a3-39c037961d84.png)
 
 #### Performance resulting from cosimulation
-![Latency from cosimulation](https://user-images.githubusercontent.com/24892582/133290489-7271b343-457e-45db-b0da-8b0fc7300bb0.png)
+![Latency from cosimulation](https://user-images.githubusercontent.com/24892582/133291571-ffde6354-cf50-4a73-9b49-167984f770cf.png)
 
-![Throughput from cosimulation](https://user-images.githubusercontent.com/24892582/133290504-3e5c1e53-2bec-495a-a191-98ec384a60fa.png)
+![Throughput from cosimulation](https://user-images.githubusercontent.com/24892582/133291592-7c06c252-16e1-4c41-a4e8-e2e19ca75118.png)
