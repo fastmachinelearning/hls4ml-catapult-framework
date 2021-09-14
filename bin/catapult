@@ -1,7 +1,12 @@
 #!/bin/bash
 set -e
+
 CUR_DIR=$(pwd)
-cd /home/mgraczyk/Desktop/Catapult/tmp
+MAIN_DIR="${BASH_SOURCE%/*}/.."
+
+cd $MAIN_DIR
+mkdir -p tmp
+cd tmp
 singularity exec --bind /opt/Xilinx:/opt/Xilinx ../bin/catapult.sif catapult ${@:1}
-rm -R /home/mgraczyk/Desktop/Catapult/tmp/* &> /dev/null
+rm -R $MAIN_DIR/tmp &> /dev/null
 cd $CUR_DIR

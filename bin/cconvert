@@ -59,11 +59,55 @@ def copy_files(src_path, dest_path):
             shutil.copy2(path, dest_path / dest_dir)
 
 
-def replace_vivado(dest_path):
+def get_weight_str(src_path):
+    parameters_path = src_path / 'firmware' / 'parameters.h'
+    parameters = get_string_from_file(parameters_path)
+
+    weight_includes = re.search(r'//hls-fpga-machine-learning insert weights\n'
+                                r'((?:\#include ".+"\n)+)',
+                                parameters).group(1)
+    weight_paths = re.findall(r'#include "(.+)"\n', weight_includes)
+
+    non_synthesis_parts = []
+    weight_txt_paths = []
+    
+    for path in weight_paths:
+        weight_path = src_path / 'firmware' / path
+        specific_weights = get_string_from_file(weight_path)
+
+        match = re.search(r'#ifndef __SYNTHESIS__\n(.+?)\n#else\n.+?\n#endif',
+                          specific_weights, flags=re.DOTALL)
+
+        non_synthesis_parts.append(match.group(1))
+
+        weight_txt_paths.append(path[:-1] + 'txt')
+
+    synthesis_parts = []
+
+    for i in range(len(non_synthesis_parts)):
+        synthesis_parts.append(non_synthesis_parts[i][:-1] +
+                               ' = {\n'
+                               f'#include "{weight_txt_paths[i]}"'
+                               '\n};')
+    
+    weights_str = '// Weights start\n\n'
+    weights_str += '#ifndef __SYNTHESIS__\n'
+    weights_str += '\n'.join(non_synthesis_parts)
+    weights_str += '\n#else\n'
+    weights_str += '\n'.join(synthesis_parts)
+    weights_str += '\n#endif\n\n'
+    weights_str += '// Weights end'
+
+    return weights_str
+
+
+def replace_vivado(dest_path, weight_str):
     # Process myproject.cpp
     myproject_path = dest_path / 'myproject.cpp'
     myproject = get_string_from_file(myproject_path)
     myproject = replace(myproject, r'#pragma', '//#pragma')
+    myproject = replace(myproject, r'void myproject',
+                        f'{weight_str}\n\nvoid myproject')
     save(myproject, myproject_path)
 
     # Process myproject.h
@@ -98,6 +142,11 @@ def replace_vivado(dest_path):
     parameters = replace(parameters, r'ap_uint<(\d+)(.*?)>',
                          r'ac_int<\1,false\2>')
     parameters = replace(parameters, r'AP_', 'AC_')
+    parameters = replace(parameters, r'#include "weights/.+"\n', '')
+    parameters = replace(parameters,
+                         r'//hls-fpga-machine-learning insert weights',
+                         '//hls-fpga-machine-learning insert weights: '
+                         'see myproject.cpp')
     save(parameters, parameters_path)
 
 
@@ -209,6 +258,7 @@ def create_table_directory(dest_path):
 
 
 def get_bits_for_exp_and_inv(dest_path):
+    # Get the data type for softmax itself
     myproject_path = dest_path / 'myproject.cpp'
     myproject = get_string_from_file(myproject_path)
     regex_input_type = \
@@ -229,6 +279,7 @@ def get_bits_for_exp_and_inv(dest_path):
         data_int_bits_num = int(regex_data.group(2))
         data_tuple = (data_bits_num, data_int_bits_num)
 
+    # Get the data type for the exp table (exp_table_t)
     parameters_path = dest_path / 'parameters.h'
     parameters = get_string_from_file(parameters_path)
     regex_exp = \
@@ -242,6 +293,7 @@ def get_bits_for_exp_and_inv(dest_path):
         exp_int_bits_num = int(regex_exp.group(2))
         exp_tuple = (exp_bits_num, exp_int_bits_num)
 
+    # Get the data type for the inv table (inv_table_t)
     regex_inv = \
         re.search(r'typedef ac_fixed<(\d+)\s*,\s*(\d+)\s*,\s*true.*> '
                   'inv_table_t', parameters)
@@ -253,10 +305,12 @@ def get_bits_for_exp_and_inv(dest_path):
         inv_int_bits_num = int(regex_inv.group(2))
         inv_tuple = (inv_bits_num, inv_int_bits_num)
 
+    # Return everything
     return data_tuple, exp_tuple, inv_tuple
 
 
 def softmax_real_val_from_idx(bits_num, int_bits_num, table_size, i):
+    # The Pythonic version of Vivado HLS C++ softmax_real_val_from_idx()
     n = math.ceil(math.log2(table_size))
 
     x = i << (bits_num - n)
@@ -412,7 +466,27 @@ def generate_selu_table(table_size, dest_path):
             sep = ", "
 # ------------------------------------------------------------
 
-def run(src, dest, force):
+
+def copy_tcl_files(dest_path):
+    tcl_path = dest_path / 'tcl'
+    tcl_path.mkdir(parents=True)
+
+    template_path = Path(__file__).parent.parent / 'templates'
+
+    FILES = [
+        template_path / '00_analyze.tcl',
+        template_path / '01_compile.tcl',
+        template_path / '02_libraries.tcl',
+        template_path / '03_assembly.tcl',
+        template_path / '04_architect.tcl',
+        template_path / '05_schedule.tcl'
+    ]
+
+    for file_path in FILES:
+        shutil.copy2(file_path, tcl_path) 
+
+
+def run(src, dest, force, table_size):
     src_path = Path(src)
     dest_path = Path(dest)
 
@@ -435,14 +509,16 @@ def run(src, dest, force):
         # Step 1: Copy the files
         copy_files(src_path, dest_path)
 
-        # Step 2: Replace Vivado-specific parts with Catapult ones
-        replace_vivado(dest_path)
+        # Step 2: Get weights to be inserted into myproject.cpp
+        weight_str = get_weight_str(src_path)
+        
+        # Step 3: Replace Vivado-specific parts with Catapult ones
+        replace_vivado(dest_path, weight_str)
 
-        # Step 3: Generate test data
+        # Step 4: Generate test data
         generate_test_data(src_path, dest_path)
     
-        # Step 4: Generate activation tables
-        table_size = 1024
+        # Step 5: Generate activation tables
         dest_table_path = create_table_directory(dest_path)
 
         data_bits, exp_bits, inv_bits = get_bits_for_exp_and_inv(dest_path)
@@ -456,6 +532,9 @@ def run(src, dest, force):
         generate_softsign_table(table_size, dest_table_path)
         generate_elu_table(table_size, dest_table_path)
         generate_selu_table(table_size, dest_table_path)
+
+        # Step 6: Put TCL files
+        copy_tcl_files(dest_path)
     
         # Done!
         print_msg('the specified hls4ml Vivado HLS project has been converted '
@@ -478,6 +557,10 @@ if __name__ == '__main__':
     parser.add_argument('--force', action='store_true', dest='force',
                         help='remove the destination directory if it exists '
                         'and is not empty')
+    parser.add_argument('--table-size', metavar='INT', type=int,
+                        default=1024, dest='table_size', help='the number of '
+                        'entries in activation tables to be generated (default: '
+                        '1024)')
 
     args = parser.parse_args()
-    run(args.src, args.dest, args.force)
+    run(args.src, args.dest, args.force, args.table_size)

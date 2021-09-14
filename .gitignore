@@ -198,11 +198,12 @@ cython_debug/
 # Ignore Singularity files
 *.sif
 
-# Ignore the template repository
-hls4ml-catapult-template
-
-# Ignore compilation logs
+# Ignore compilation and synthesis logs
 compile_logs
+synthesize_logs
 
-# Ignore Catapult projects
-projects
+# Ignore Catapult projects except for the example ones
+projects/*
+!projects/Dense019
+!projects/EntireTemplate
+!projects/README.md
