@@ -41,7 +41,9 @@ If you choose not to use `synthesize`, remember to set the `REGISTER_THRESHOLD` 
 ### Performance and resource usage metrics as of 14/09/2021 with the same RF applied to all layers
 The following graphs show various performance and resource usage metrics for Dense019 synthesised with Vivado HLS, Catapult HLS with no blocks (i.e. option 1) and Catapult HLS with blocks (i.e. option 2).
 
-In all cases, the synthesis was done for the Xilinx `xcvu9p-flgb2104-2L-e` FPGA with the clock period of 5 ns and 0.625 ns uncertainty. The same ReuseFactor was applied to the entire model / all layers in the model.
+In all cases, the synthesis was done by Catapult 10.5c/896140 for the Xilinx `xcvu9p-flgb2104-2L-e` FPGA with the clock period of 5 ns and 0.625 ns uncertainty. The cosimulation was done with QuestaSim 2020.4 and the resource usage metrics were obtained from the Vivado 2020.1 logic synthesis process.
+
+The same ReuseFactor was applied to the entire model / all layers in the model.
 
 #### Resource usage (LUTs, FFs, DSPs)
 ![LUT](https://user-images.githubusercontent.com/24892582/133286572-7715a779-f442-4c20-8569-ecad559ab0cf.png)
