@@ -13,7 +13,9 @@ There are two ways of synthesising this model:
 * **Option 1**: Fully unrolling all loops and pipelining `myproject()` (i.e. the main function) with II (initiation interval) = target ReuseFactor (RF).
 * **Option 2**: Modelling every layer as an independent block communicating with the outside world using `ac_channel`, fully unrolling all loops and pipelining each block with II = target RF for that block.
 
-Option 1 allows for setting RF for the entire model **only**, while option 2 allows for setting RF for each layer separately. Both ways come with their pros and cons.
+Option 1 allows for setting RF for the entire model **only**, while option 2 allows for setting RF for each layer separately. Both ways come with their pros and cons:
+* With option 1, Catapult can apply optimisations on an entire model, including in-between layers, at the cost of smaller RF flexibility and harder analysis for humans (due to no distinction between layers in statistics produced by Catapult).
+* With option 2, there is larger RF flexibility, different optimisations can be set for different layers and analysis is easier for humans (due to a clear distinction between layers). The cost is a performance and resource overhead of using blocks (tweaks have been applied to mitigate this as much as possible) along with potential difficulties to apply optimisations in-between layers.
 
 In order to use option 1, you need to uncomment the (\*) region in `tcl/04_architect.tcl` and `myproject.cpp` along with commenting the (\*\*) region there. Similarly, to use option 2, you need to uncomment the (\*\*) region and comment the (\*) one.
 
