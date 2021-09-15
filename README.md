@@ -14,8 +14,8 @@ A framework for developing the hls4ml Catapult backend.
 * `cpp-src`: the C++ code of the hls4ml Catapult backend is stored here.
 * `projects`: all hls4ml Catapult projects are stored here.
 * `templates`: all testbench and TCL templates used by the framework are stored here.
-* `compile-logs`: the most recent logs produced by `compile` are stored here. This directory is created automatically by `compile`, you don't have to make it manually.
-* `synthesize-logs`: the most recent logs produced by `synthesize` are stored here. This directory is created automatically by `synthesize`, you don't have to make it manually.
+* `compile_logs`: the most recent logs produced by `compile` are stored here. This directory is created automatically by `compile`, you don't have to make it manually.
+* `synthesize_logs`: the most recent logs produced by `synthesize` are stored here. This directory is created automatically by `synthesize`, you don't have to make it manually.
 
 **You should not rename any of those directories if you want to be sure that everything works correctly.**
 
@@ -68,7 +68,7 @@ compile 1 2 3Q
 ```
 will run the first two steps of the Catapult flow for `Dense001`, `Dense002` and `Dense003Q`.
 
-Catapult outputs are caught by `compile` and saved to a log file in the `compile-logs` directory. `compile-logs` stores only logs from the most recent run of `compile`.
+Catapult outputs are caught by `compile` and saved to a log file in the `compile_logs` directory. `compile_logs` stores only logs from the most recent run of `compile`.
 
 The tool automatically parses the results of running a C++ testbench and presents them in a way where a judgement can be made quickly (i.e. the largest relative error between expected and actual results). However, all testing results should be eventually checked manually by inspecting the produced log file.
 
@@ -91,7 +91,7 @@ synthesize 1 2 3Q --rtl-synthesize
 ```
 will run the entire Catapult flow along with RTL synthesis for `Dense001`, `Dense002` and `Dense003Q`.
 
-Catapult and RTL tool outputs are caught by `synthesize` and saved to a log file in the `synthesize-logs` directory. `synthesize-logs` stores only logs from the most recent run of `synthesize`.
+Catapult and RTL tool outputs are caught by `synthesize` and saved to a log file in the `synthesize_logs` directory. `synthesize_logs` stores only logs from the most recent run of `synthesize`.
 
 The tool automatically parses the results of running the flow, cosimulation and optionally RTL synthesis and prints the following information:
 * Predicted latency and throughput
