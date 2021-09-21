@@ -109,7 +109,7 @@ For more details and available options, you can run either `synthesize -h` or `s
 If there is something you don't understand or you have a problem with using the framework, feel free to post an issue in "Issues".
 
 ### Known issues
-* The `latency` implementation of `Dense` returns incorrect results in some cases when II/RF (initiation interval / ReuseFactor) is greater than 1. Usually, only one or a few bits are wrong in the entire output bit pattern and the bug is more likely to appear for either larger `Dense` layers (i.e. with a greater number of neurons/calculations) or larger values of II/RF.
+* At the cosimulation stage, the `latency` implementation of `Dense` returns incorrect results in some cases when II/RF (initiation interval / ReuseFactor) is greater than 1. Usually, only one or a few bits are wrong in the entire output bit pattern and the bug is more likely to appear for either larger `Dense` layers (i.e. with a greater number of neurons/calculations) or larger values of II/RF.
 
 ## Contributing
 All contributions are welcome! Please fork the repository, make your changes and create a pull request.
