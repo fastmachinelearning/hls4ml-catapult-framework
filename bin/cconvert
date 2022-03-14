@@ -7,6 +7,7 @@ import subprocess
 import math
 import numpy as np
 from pathlib import Path
+from functools import reduce
 
 
 PROG_NAME = 'cconvert'
@@ -163,15 +164,32 @@ def generate_test_data(src_path, dest_path):
     output_type = regex_match.group(2)
 
     # Obtain the number of network inputs and outputs + the input bit width
+    regex_match = re.search(r'\[(\S+)\];\s*nnet::copy_data.+;\s*.+\[(\S+)\];',
+                            test)
+
+    input_num_str = regex_match.group(1)
+    output_num_str = regex_match.group(2)
+
+    input_nums = input_num_str.split('*')
+    output_nums = output_num_str.split('*')
+
     defines_path = src_path / 'firmware' / 'defines.h'
     defines = get_string_from_file(defines_path)
-    regex_results = re.findall(r'#define (N_.+?) (\d+)', defines)
+    
+    for i in range(len(input_nums)):
+        regex_match = re.search(r'#define ' + input_nums[i] + r' (\d+)',
+                                defines)
 
-    input_num_name, input_num = regex_results[0]
-    output_num_name, output_num = regex_results[-1]
+        input_nums[i] = int(regex_match.group(1))
 
-    input_num = int(input_num)
-    output_num = int(output_num)
+    for i in range(len(output_nums)):
+        regex_match = re.search(r'#define ' + output_nums[i] + r' (\d+)',
+                                defines)
+
+        output_nums[i] = int(regex_match.group(1))
+
+    input_num = reduce(lambda x, y: x * y, input_nums)
+    output_num = reduce(lambda x, y: x * y, output_nums)
 
     regex_match = re.search(r'typedef ap_.+<(\d+).*> ' + input_type + ';',
                             defines)
@@ -206,8 +224,8 @@ def generate_test_data(src_path, dest_path):
     test_template_path = \
         Path(__file__).parent.parent / 'templates' / 'myproject_test_vivado.cpp'
     test_template = get_string_from_file(test_template_path)
-    test_template = test_template.replace('{{N_INPUT}}', input_num_name)
-    test_template = test_template.replace('{{N_OUTPUT}}', output_num_name)
+    test_template = test_template.replace('{{N_INPUT}}', input_num_str)
+    test_template = test_template.replace('{{N_OUTPUT}}', output_num_str)
     test_template = test_template.replace('{{INPUT_TYPE}}', input_type)
     test_template = test_template.replace('{{OUTPUT_TYPE}}', output_type)
 
@@ -243,9 +261,9 @@ def generate_test_data(src_path, dest_path):
         Path(__file__).parent.parent / 'templates' / 'myproject_test.cpp'
     test_template_dest = get_string_from_file(test_template_dest_path)
     test_template_dest = test_template_dest.replace('{{N_INPUT}}',
-                                                    input_num_name)
+                                                    input_num_str)
     test_template_dest = test_template_dest.replace('{{N_OUTPUT}}',
-                                                    output_num_name)
+                                                    output_num_str)
     test_template_dest = test_template_dest.replace('{{INPUT_TYPE}}',
                                                     input_type)
     test_template_dest = test_template_dest.replace('{{OUTPUT_TYPE}}',
