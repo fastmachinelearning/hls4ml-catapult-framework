@@ -156,14 +156,14 @@ if __name__ == "__main__":
     # update the call below (e.g. the help message)
     parser.add_argument('nums', metavar='ID', type=str,
                         nargs='+', help='the IDs of projects to be processed, '
-                        'e.g. 1 2 3 will synthesise Dense001, Dense002 and '
-                        'Dense003 respectively (put \'all\' if you want to '
+                        'e.g. 1 2 3 will synthesise Net001, Net002 and '
+                        'Net003 respectively (put \'all\' if you want to '
                         'process all projects)')
 
     parser.add_argument('--stress', action='store_true', dest='stress',
                         help='synthesise stress projects (i.e. starting '
-                        'with SDense) instead of standard ones (i.e. starting '
-                        'with Dense)')
+                        'with SNet) instead of standard ones (i.e. starting '
+                        'with Net)')
     parser.add_argument('--settings', metavar='ASSIGNS', dest='settings',
                         help='variables to be set for HLS synthesis purposes, '
                         'in the form of a comma-separated KEY=VALUE list '
@@ -215,7 +215,7 @@ if __name__ == "__main__":
 
         # (*) If you want to change hls4ml Catapult project naming,
         # update the line below
-        pattern = r'^SDense(\S+)$' if stress else r'^Dense(\S+)$'
+        pattern = r'^SNet(\S+)$' if stress else r'^Net(\S+)$'
 
         for project in os.listdir('projects'):
             match = re.search(pattern, project)
@@ -242,7 +242,7 @@ if __name__ == "__main__":
     for i in nums:
         # (*) If you want to change hls4ml Catapult project naming,
         # update the line below
-        name = f'SDense{i}' if stress else f'Dense{i}'
+        name = f'SNet{i}' if stress else f'Net{i}'
 
         # Run the Catapult flow
         print(f'[{name}] HLS synthesis...', end=' ', flush=True)

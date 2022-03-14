@@ -1,7 +1,7 @@
 ## 'projects' directory
 All hls4ml Catapult project directories should be put here. Unless the scripts have been changed, the name of every folder should follow one of the patterns below:
-* `DenseXXXy`, where `XXX` is a number with **exactly** 3 digits (if the number has less than 3 digits, leading zeroes must be added) and `y` is any string. This corresponds to a standard (i.e. non-stress) model.
-* `SDenseXXXy`, where `XXX` is a number with **exactly** 3 digits (if the number has less than 3 digits, leading zeroes must be added) and `y` is any string. This corresponds to a stress model (which is processed when `compile`/`synthesize` is run with the `--stress` flag).
+* `NetXXXy`, where `XXX` is a number with **exactly** 3 digits (if the number has less than 3 digits, leading zeroes must be added) and `y` is any string. This corresponds to a standard (i.e. non-stress) model.
+* `SNetXXXy`, where `XXX` is a number with **exactly** 3 digits (if the number has less than 3 digits, leading zeroes must be added) and `y` is any string. This corresponds to a stress model (which is processed when `compile`/`synthesize` is run with the `--stress` flag).
 * `EntireTemplate`. This corresponds to a special project designed for checking the compile-time correctness of the C++ part of the Catapult backend. The project ID here is always 0.
 
 ### Project structure
@@ -42,6 +42,6 @@ You must pay special attention to `RTL_SYN_TOOL` in `02_libraries.tcl`. Its defa
 ### Project examples
 The following project examples are provided:
 * `EntireTemplate`
-* `Dense019`
+* `Net019`
 
 See `README.md` inside both directories for more information about the projects. These are real projects, so they can also be used for the Catapult backend R&D.

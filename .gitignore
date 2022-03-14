@@ -204,6 +204,6 @@ synthesize_logs
 
 # Ignore Catapult projects except for the example ones
 projects/*
-!projects/Dense019
+!projects/Net019
 !projects/EntireTemplate
 !projects/README.md

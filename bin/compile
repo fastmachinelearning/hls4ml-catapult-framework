@@ -17,14 +17,14 @@ if __name__ == "__main__":
                                      'specifying ID 0 with no --stress flag.')
     parser.add_argument('nums', metavar='ID', type=str,
                         nargs='*', help='the IDs of projects to be processed, '
-                        'e.g. 1 2 3 will test Dense001, Dense002 and '
-                        'Dense003 respectively. If not provided, all Dense '
+                        'e.g. 1 2 3 will test Net001, Net002 and '
+                        'Net003 respectively. If not provided, all Net '
                         ' projects (except stress ones) + EntireTemplate will '
                         'be processed.')
     parser.add_argument('--stress', action='store_true', dest='stress',
                         help='process stress projects (i.e. starting '
-                        'with SDense) instead of standard ones (i.e. starting '
-                        'with Dense). This will cause EntireTemplate not to be '
+                        'with SNet) instead of standard ones (i.e. starting '
+                        'with Net). This will cause EntireTemplate not to be '
                         'processed.')
     parser.add_argument('--no-test', action='store_false', dest='do_test',
                         help='do not run test benches')
@@ -39,10 +39,10 @@ if __name__ == "__main__":
     if len(args.nums) == 0:
         if args.stress:
             nums = []
-            pattern = r'^SDense(\S+)$'
+            pattern = r'^SNet(\S+)$'
         else:
             nums = ['000']
-            pattern = r'^Dense(\S+)$'
+            pattern = r'^Net(\S+)$'
 
         for project in os.listdir('projects'):
             match = re.search(pattern, project)
@@ -66,7 +66,7 @@ if __name__ == "__main__":
     errors = False
 
     for i in nums:
-        name = f'Dense{i}' if i != '000' else 'EntireTemplate'
+        name = f'Net{i}' if i != '000' else 'EntireTemplate'
 
         if stress:
             if name == 'EntireTemplate':

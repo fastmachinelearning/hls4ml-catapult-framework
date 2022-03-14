@@ -1,4 +1,4 @@
-## Dense019
+## Net019
 This is a project implementing the standard Keras model number 019 from https://gist.github.com/maksgraczyk/2ded252bf471c94d43bfd836b3953a23, i.e. the one described by the Keras code below:
 ```
 model = Sequential()
@@ -33,13 +33,13 @@ This list is not guaranteed to contain the optimal optimisations, so you are wel
 ### Quick start
 1. Choose which synthesis option you want to use (see the section above).
 2. Comment and uncomment the (\*) and (\*\*) regions accordingly and set II/RF to values of your choice (or leave the default ones which are 1 everywhere).
-3. If you want to work with the project directly in Catapult, run `compile` on this project and then open `Dense019` in Catapult.
+3. If you want to work with the project directly in Catapult, run `compile` on this project and then open `Net019` in Catapult.
 4. If you want to run the entire Catapult flow instead, run `synthesize` on this project.
 
 If you choose not to use `synthesize`, remember to set the `REGISTER_THRESHOLD` directive in Catapult to a high value (e.g. 10240) before running `go assembly`.
 
 ### Performance and resource usage metrics as of 14/09/2021 with the same RF applied to all layers
-The following graphs show various performance and resource usage metrics for Dense019 synthesised with Vivado HLS, Catapult HLS with no blocks (i.e. option 1) and Catapult HLS with blocks (i.e. option 2).
+The following graphs show various performance and resource usage metrics for Net019 synthesised with Vivado HLS, Catapult HLS with no blocks (i.e. option 1) and Catapult HLS with blocks (i.e. option 2).
 
 In all cases, the synthesis was done by Vivado HLS 2020.1 or Catapult 10.5c/896140 for the Xilinx `xcvu9p-flgb2104-2L-e` FPGA with the clock period of 5 ns and 0.625 ns uncertainty. The cosimulation was done with the cosim function in Vivado HLS or QuestaSim 2020.4 and the resource usage metrics were obtained from the Vivado 2020.1 logic synthesis process.
 
@@ -63,7 +63,7 @@ The same ReuseFactor was applied to the entire model / all layers in the model.
 ![Throughput from cosimulation](https://user-images.githubusercontent.com/24892582/133291592-7c06c252-16e1-4c41-a4e8-e2e19ca75118.png)
 
 ### Performance and resource usage metrics as of 14/09/2021 with different RF applied to layers
-The following graphs show various performance and resource usage metrics for Dense019 synthesised with Vivado HLS and Catapult HLS with blocks (i.e. option 2).
+The following graphs show various performance and resource usage metrics for Net019 synthesised with Vivado HLS and Catapult HLS with blocks (i.e. option 2).
 
 In all cases, the synthesis was done by Vivado HLS 2020.1 or Catapult 10.5c/896140 for the Xilinx `xcvu9p-flgb2104-2L-e` FPGA with the clock period of 5 ns and 0.625 ns uncertainty. The cosimulation was done with the cosim function in Vivado HLS or QuestaSim 2020.4 and the resource usage metrics were obtained from the Vivado 2020.1 logic synthesis process.
 
