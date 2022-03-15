@@ -67,7 +67,13 @@ def get_weight_str(src_path):
 
     weight_includes = re.search(r'//hls-fpga-machine-learning insert weights\n'
                                 r'((?:\#include ".+"\n)+)',
-                                parameters).group(1)
+                                parameters)
+
+    if weight_includes is None:
+        return None
+
+    weight_includes = weight_includes.group(1)
+
     weight_paths = re.findall(r'#include "(.+)"\n', weight_includes)
 
     # Parse the weight header files and return the weight setup code to be
@@ -110,8 +116,11 @@ def replace_vivado(dest_path, weight_str):
     myproject_path = dest_path / 'myproject.cpp'
     myproject = get_string_from_file(myproject_path)
     myproject = replace(myproject, r'#pragma', '//#pragma')
-    myproject = replace(myproject, r'void myproject',
-                        f'{weight_str}\n\nvoid myproject')
+
+    if weight_str is not None:
+        myproject = replace(myproject, r'void myproject',
+                            f'{weight_str}\n\nvoid myproject')
+
     save(myproject, myproject_path)
 
     # Process myproject.h
