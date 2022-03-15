@@ -294,13 +294,14 @@ def get_bits_for_exp_and_inv(dest_path):
     regex_input_type = \
         re.search(r'nnet::softmax<(\S+),.+?>', myproject)
 
+    defines_path = dest_path / 'defines.h'
+    defines = get_string_from_file(defines_path)
+
     if regex_input_type is None:
         data_tuple = None
     else:
         softmax_input_type = regex_input_type.group(1)
 
-        defines_path = dest_path / 'defines.h'
-        defines = get_string_from_file(defines_path)
         regex_data = \
             re.search(r'typedef ac_fixed<(\d+)\s*,\s*(\d+)\s*,\s*true.*> ' +
                       softmax_input_type, defines)
@@ -310,11 +311,9 @@ def get_bits_for_exp_and_inv(dest_path):
         data_tuple = (data_bits_num, data_int_bits_num)
 
     # Get the data type for the exp table (exp_table_t)
-    parameters_path = dest_path / 'parameters.h'
-    parameters = get_string_from_file(parameters_path)
     regex_exp = \
         re.search(r'typedef ac_fixed<(\d+)\s*,\s*(\d+)\s*,\s*true.*> '
-                  'exp_table_t', parameters)
+                  'softmaxexp_table_t', defines)
 
     if regex_exp is None:
         exp_tuple = None
@@ -326,7 +325,7 @@ def get_bits_for_exp_and_inv(dest_path):
     # Get the data type for the inv table (inv_table_t)
     regex_inv = \
         re.search(r'typedef ac_fixed<(\d+)\s*,\s*(\d+)\s*,\s*true.*> '
-                  'inv_table_t', parameters)
+                  'softmaxinv_table_t', defines)
 
     if regex_inv is None:
         inv_tuple = None
