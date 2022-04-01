@@ -220,9 +220,9 @@ void conv_2d_latency_cl(
 
 
     // Initialize accumulator with input biases
-    for(int oh = 0; oh < CONFIG_T::out_height; oh++) {
-        for(int ow = 0; ow < CONFIG_T::out_width; ow++) {
-            for(int ff = 0; ff < CONFIG_T::n_filt; ff++) {
+    AccumBiasOutHeight: for(int oh = 0; oh < CONFIG_T::out_height; oh++) {
+        AccumBiasOutWidth: for(int ow = 0; ow < CONFIG_T::out_width; ow++) {
+            AccumBiasFilt: for(int ff = 0; ff < CONFIG_T::n_filt; ff++) {
                 acc[oh*CONFIG_T::out_width*CONFIG_T::n_filt + ow*CONFIG_T::n_filt + ff]=biases[ff];
             }
         }
@@ -258,9 +258,9 @@ void conv_2d_latency_cl(
     }//end output height loop
 
     // Cast to "res_t" type
-    for(int oh = 0; oh < CONFIG_T::out_height; oh++) {
-        for(int ow = 0; ow < CONFIG_T::out_width; ow++) {
-              for(int ff = 0; ff < CONFIG_T::n_filt; ff++) {
+    ResOutHeight: for(int oh = 0; oh < CONFIG_T::out_height; oh++) {
+        ResOutWidth: for(int ow = 0; ow < CONFIG_T::out_width; ow++) {
+              ResFilt: for(int ff = 0; ff < CONFIG_T::n_filt; ff++) {
                 int index = oh*CONFIG_T::out_width*CONFIG_T::n_filt + ow*CONFIG_T::n_filt + ff;
                 res[index] = (res_T)(acc[index]);
             }
