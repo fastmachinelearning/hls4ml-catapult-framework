@@ -137,14 +137,14 @@ def replace_vivado(dest_path, weight_str):
                       r'ac_fixed<\1,true\2>')
     defines = replace(defines, r'ap_ufixed<(\d+[, ]+\d+)(.*?)>',
                       r'ac_fixed<\1,false\2>')
+    defines = replace(defines, r'ap_int<([^,]+?)>',
+                      r'ac_int<\1,true>')
+    defines = replace(defines, r'ap_uint<([^,]+?)>',
+                         r'ac_int<\1,false>')
     defines = replace(defines, r'ap_int<(.+?)(,.+?)>',
                          r'ac_int<\1,true\2>')
     defines = replace(defines, r'ap_uint<(.+?)(,.+?)>',
                          r'ac_int<\1,false\2>')
-    defines = replace(defines, r'ap_int<([^,]+?)>',
-                         r'ac_int<\1,true>')
-    defines = replace(defines, r'ap_uint<([^,]+?)>',
-                         r'ac_int<\1,false>')
     defines = replace(defines, r'AP_', 'AC_')
     save(defines, defines_path)
 
@@ -156,14 +156,14 @@ def replace_vivado(dest_path, weight_str):
                          r'ac_fixed<\1,true\2>')
     parameters = replace(parameters, r'ap_ufixed<(\d+[, ]+\d+)(.*?)>',
                          r'ac_fixed<\1,false\2>')
-    parameters = replace(parameters, r'ap_int<(.+?)(,.+?)>',
-                         r'ac_int<\1,true\2>')
-    parameters = replace(parameters, r'ap_uint<(.+?)(,.+?)>',
-                         r'ac_int<\1,false\2>')
     parameters = replace(parameters, r'ap_int<([^,]+?)>',
                          r'ac_int<\1,true>')
     parameters = replace(parameters, r'ap_uint<([^,]+?)>',
                          r'ac_int<\1,false>')
+    parameters = replace(parameters, r'ap_int<(.+?)(,.+?)>',
+                         r'ac_int<\1,true\2>')
+    parameters = replace(parameters, r'ap_uint<(.+?)(,.+?)>',
+                         r'ac_int<\1,false\2>')
     parameters = replace(parameters, r'AP_', 'AC_')
     parameters = replace(parameters, r'#include "weights/.+"\n', '')
     parameters = replace(parameters,
