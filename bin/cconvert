@@ -537,26 +537,44 @@ def generate_selu_table(table_size, dest_path):
 # ------------------------------------------------------------
 
 
-def copy_tcl_files(dest_path):
+def copy_tcl_files(dest_path, extra_tcl_dir, replace_tcl):
     tcl_path = dest_path / 'tcl'
     tcl_path.mkdir(parents=True)
 
     template_path = Path(__file__).parent.parent / 'templates'
 
-    FILES = [
-        template_path / '00_analyze.tcl',
-        template_path / '01_compile.tcl',
-        template_path / '02_libraries.tcl',
-        template_path / '03_assembly.tcl',
-        template_path / '04_architect.tcl',
-        template_path / '05_schedule.tcl'
+    TCL_NAMES = [
+        '00_analyze.tcl',
+        '01_compile.tcl',
+        '02_libraries.tcl',
+        '03_assembly.tcl',
+        '04_architect.tcl',
+        '05_schedule.tcl'
     ]
 
+    FILES = [template_path / name for name in TCL_NAMES]
+    
     for file_path in FILES:
-        shutil.copy2(file_path, tcl_path) 
+        shutil.copy2(file_path, tcl_path)
+
+    if extra_tcl_dir is not None:
+        extra_tcl_path = Path(extra_tcl_dir)
+
+        EXTRA_FILES = [extra_tcl_path / name for name in TCL_NAMES]
+        TCL_FILES = [tcl_path / name for name in TCL_NAMES]
+
+        for i in range(len(EXTRA_FILES)):
+            if not EXTRA_FILES[i].exists():
+                continue
+
+            mode = 'w' if replace_tcl else 'a'
+            
+            with TCL_FILES[i].open(mode=mode) as tcl_file:
+                with EXTRA_FILES[i].open() as extra_file:
+                    shutil.copyfileobj(extra_file, tcl_file)
 
 
-def run(src, dest, force, table_size):
+def run(src, dest, force, table_size, extra_tcl_dir, replace_tcl):
     src_path = Path(src)
     dest_path = Path(dest)
 
@@ -604,7 +622,7 @@ def run(src, dest, force, table_size):
         generate_selu_table(table_size, dest_table_path)
 
         # Step 6: Put TCL files
-        copy_tcl_files(dest_path)
+        copy_tcl_files(dest_path, extra_tcl_dir, replace_tcl)
     
         # Done!
         print_msg('the specified hls4ml Vivado HLS project has been converted '
@@ -631,6 +649,19 @@ if __name__ == '__main__':
                         default=1024, dest='table_size', help='the number of '
                         'entries in activation tables to be generated (default: '
                         '1024)')
+    parser.add_argument('--tcl-dir', metavar='DIR', type=str, dest='tcl_dir',
+                        help='the path to a directory with TCL scripts '
+                        '00_analyze.tcl, 01_compile.tcl etc. to be appended (or '
+                        'added instead of the default scripts if --replace-tcl '
+                        'is used) to the converted project')
+    parser.add_argument('--replace-tcl', action='store_true', dest='replace_tcl',
+                        help='do not use the default TCL scripts and use the '
+                        'ones in the directory specified by --tcl-dir instead')
 
     args = parser.parse_args()
-    run(args.src, args.dest, args.force, args.table_size)
+
+    if args.replace_tcl and args.tcl_dir is None:
+        error('--replace-tcl requires --tcl-dir')
+    
+    run(args.src, args.dest, args.force, args.table_size, args.tcl_dir,
+        args.replace_tcl)
