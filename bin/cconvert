@@ -36,8 +36,31 @@ def save(string, path):
         f.write(string)
     
 
-def replace(string, pattern, repl):
-    return re.sub(pattern, repl, string, flags=re.DOTALL)
+def replace(string, pattern, repl, replace_line=False,
+            return_replaced_lines=False):
+    if replace_line:
+        matches = re.findall('^(.*' + pattern + '.*)$', string,
+                             flags=re.MULTILINE)
+        result = string
+        lines = []
+
+        for match in matches:
+            if isinstance(match, str):
+                line = re.escape(match)
+                lines.append(match)
+            else:
+                line = re.escape(match[0])
+                lines.append(match[0])
+
+            result = re.sub('^' + line + '$', repl, result,
+                            flags=re.MULTILINE)
+
+        if return_replaced_lines:
+            return result, lines
+        else:
+            return result
+    else:
+        return re.sub(pattern, repl, string, flags=re.DOTALL)
 
 
 def copy_files(src_path, dest_path):
@@ -112,6 +135,33 @@ def get_weight_str(src_path):
 
 
 def replace_vivado(dest_path, weight_str):
+    # Process parameters.h
+    parameters_path = dest_path / 'parameters.h'
+    parameters = get_string_from_file(parameters_path)
+    parameters = replace(parameters, r'ap_(.*?)\.h', r'ac_\1.h')
+    parameters = replace(parameters, r'ap_fixed<(\d+[, ]+\d+)(.*?)>',
+                         r'ac_fixed<\1,true\2>')
+    parameters = replace(parameters, r'ap_ufixed<(\d+[, ]+\d+)(.*?)>',
+                         r'ac_fixed<\1,false\2>')
+    parameters = replace(parameters, r'ap_int<([^,]+?)>',
+                         r'ac_int<\1,true>')
+    parameters = replace(parameters, r'ap_uint<([^,]+?)>',
+                         r'ac_int<\1,false>')
+    parameters = replace(parameters, r'ap_int<(.+?)(,.+?)>',
+                         r'ac_int<\1,true\2>')
+    parameters = replace(parameters, r'ap_uint<(.+?)(,.+?)>',
+                         r'ac_int<\1,false\2>')
+    parameters = replace(parameters, r'AP_', 'AC_')
+    parameters = replace(parameters, r'#include "weights/.+"\n', '')
+    parameters, pixels = replace(parameters, r'\S*config\S*::pixels\[\]', '',
+                                 True, True)
+    parameters = replace(parameters, r'nnet::conv_implementation', '', True)
+    parameters = replace(parameters,
+                         r'//hls-fpga-machine-learning insert weights',
+                         '//hls-fpga-machine-learning insert weights: '
+                         'see myproject.cpp')
+    save(parameters, parameters_path)
+    
     # Process myproject.cpp
     myproject_path = dest_path / 'myproject.cpp'
     myproject = get_string_from_file(myproject_path)
@@ -120,6 +170,11 @@ def replace_vivado(dest_path, weight_str):
     if weight_str is not None:
         myproject = replace(myproject, r'void myproject',
                             f'{weight_str}\n\nvoid myproject')
+
+    if len(pixels) > 0:
+        pixels_str = '\n'.join(pixels)
+        myproject = replace(myproject, r'void myproject',
+                            f'{pixels_str}\n\nvoid myproject')
 
     save(myproject, myproject_path)
 
@@ -147,30 +202,6 @@ def replace_vivado(dest_path, weight_str):
                          r'ac_int<\1,false\2>')
     defines = replace(defines, r'AP_', 'AC_')
     save(defines, defines_path)
-
-    # Process parameters.h
-    parameters_path = dest_path / 'parameters.h'
-    parameters = get_string_from_file(parameters_path)
-    parameters = replace(parameters, r'ap_(.*?)\.h', r'ac_\1.h')
-    parameters = replace(parameters, r'ap_fixed<(\d+[, ]+\d+)(.*?)>',
-                         r'ac_fixed<\1,true\2>')
-    parameters = replace(parameters, r'ap_ufixed<(\d+[, ]+\d+)(.*?)>',
-                         r'ac_fixed<\1,false\2>')
-    parameters = replace(parameters, r'ap_int<([^,]+?)>',
-                         r'ac_int<\1,true>')
-    parameters = replace(parameters, r'ap_uint<([^,]+?)>',
-                         r'ac_int<\1,false>')
-    parameters = replace(parameters, r'ap_int<(.+?)(,.+?)>',
-                         r'ac_int<\1,true\2>')
-    parameters = replace(parameters, r'ap_uint<(.+?)(,.+?)>',
-                         r'ac_int<\1,false\2>')
-    parameters = replace(parameters, r'AP_', 'AC_')
-    parameters = replace(parameters, r'#include "weights/.+"\n', '')
-    parameters = replace(parameters,
-                         r'//hls-fpga-machine-learning insert weights',
-                         '//hls-fpga-machine-learning insert weights: '
-                         'see myproject.cpp')
-    save(parameters, parameters_path)
 
 
 def generate_test_data(src_path, dest_path):
