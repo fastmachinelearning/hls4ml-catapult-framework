@@ -168,6 +168,10 @@ if __name__ == "__main__":
                         help='variables to be set for HLS synthesis purposes, '
                         'in the form of a comma-separated KEY=VALUE list '
                         '(e.g. "CLOCK_PERIOD=5.0,CLOCK_UNCERTAINTY=0.125")')
+    parser.add_argument('--singularity', action='store_true',
+                        dest='singularity', help='use the Singularity image '
+                        'with Catapult (i.e. catapult.sif in "bin") instead of '
+                        'the local installation')
 
     rtl_group = parser.add_argument_group(title='arguments related to '
                                           'RTL (post-HLS) activities')
@@ -183,6 +187,9 @@ if __name__ == "__main__":
     os.chdir(str(Path(__file__).parent.parent))
 
     rtl_activities = None
+
+    # Parse --singularity
+    singularity = args.singularity
 
     # Parse --settings
     if args.settings is None:
@@ -201,8 +208,14 @@ if __name__ == "__main__":
         # When creating the 'settings' list, prepend all custom setting names
         # with "HLS_" so that they can be caught later on by the synthesize.tcl
         # script
-        settings = ['--env', ','.join(map(lambda x: 'HLS_' + x,
-                                          args.settings.split(',')))]
+        if singularity:
+            settings = ['--env', ','.join(map(lambda x: 'HLS_' + x,
+                                              args.settings.split(',')))]
+        else:
+            variables = args.settings.split(',')
+            variables = map(lambda x: x.split('='), variables)
+
+            settings = {'HLS_' + k: v for k, v in variables}
 
     # Parse --stress
     stress = args.stress
@@ -247,16 +260,26 @@ if __name__ == "__main__":
         # Run the Catapult flow
         print(f'[{name}] HLS synthesis...', end=' ', flush=True)
 
-        proc_returncode, proc_out = run_cmd(['singularity', 'exec',
-                                             '--env',
-                                             f'MAIN_PATH={os.getcwd()},'
-                                             f'PROJECT_NAME={name},'
-                                             'TEST=0,'
-                                             'COMPILE_ONLY=0'] + settings +
-                                             ['bin/catapult.sif',
-                                             'catapult', '-shell', '-file',
-                                             'bin/synthesize.tcl'],
-                                            name)
+        cmd_parts = ['catapult', '-shell', '-file',
+                     'bin/synthesize.tcl']
+
+        if singularity:
+            cmd_parts = ['singularity', 'exec',
+                         '--env',
+                         f'MAIN_PATH={os.getcwd()},'
+                         f'PROJECT_NAME={name},'
+                         'TEST=0,'
+                         'COMPILE_ONLY=0'] + settings + \
+                         ['bin/catapult.sif'] + cmd_parts
+            env = None
+        else:
+            env = settings
+            env['MAIN_PATH'] = os.getcwd()
+            env['PROJECT_NAME'] = name
+            env['TEST'] = '0'
+            env['COMPILE_ONLY'] = '0'
+
+        proc_returncode, proc_out = run_cmd(cmd_parts, name, env=env)
 
         project_path = Path('projects', name)
         

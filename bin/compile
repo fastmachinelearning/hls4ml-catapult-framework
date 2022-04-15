@@ -28,6 +28,10 @@ if __name__ == "__main__":
                         'processed.')
     parser.add_argument('--no-test', action='store_false', dest='do_test',
                         help='do not run test benches')
+    parser.add_argument('--singularity', action='store_true',
+                        dest='singularity', help='use the Singularity image '
+                        'with Catapult (i.e. catapult.sif in "bin") instead of '
+                        'the local installation')
 
     args = parser.parse_args()
     
@@ -35,6 +39,7 @@ if __name__ == "__main__":
 
     stress = args.stress
     do_test = args.do_test
+    singularity = args.singularity
 
     if len(args.nums) == 0:
         if args.stress:
@@ -78,21 +83,35 @@ if __name__ == "__main__":
 
         print(f'{name}... ', end='', flush=True)
 
-        proc = subprocess.run(['singularity', 'exec',
-                               '--env',
-                               f'MAIN_PATH={os.getcwd()}',
-                               '--env',
-                               f'PROJECT_NAME={name}',
-                               '--env',
-                               f'TEST={test}',
-                               '--env',
-                               'COMPILE_ONLY=1',
-                               'bin/catapult.sif',
-                               'catapult', '-shell', '-file',
-                               'bin/synthesize.tcl'],
+        cmd_parts = ['catapult', '-shell', '-file',
+                     'bin/synthesize.tcl']
+
+        if singularity:
+            cmd_parts = ['singularity', 'exec',
+                         '--env',
+                         f'MAIN_PATH={os.getcwd()}',
+                         '--env',
+                         f'PROJECT_NAME={name}',
+                         '--env',
+                         f'TEST={test}',
+                         '--env',
+                         'COMPILE_ONLY=1',
+                         'bin/catapult.sif'] + cmd_parts
+            env = None
+        else:
+            env = os.environ.copy()
+            env.update({
+                'MAIN_PATH': os.getcwd(),
+                'PROJECT_NAME': name,
+                'TEST': str(test),
+                'COMPILE_ONLY': '1'
+            })
+
+        proc = subprocess.run(cmd_parts,
                               stdout=subprocess.PIPE,
                               stderr=subprocess.STDOUT,
-                              encoding='utf-8')
+                              encoding='utf-8',
+                              env=env)
 
         with open(os.path.join('compile_logs', name + '.log'), 'w') as log_file:
             log_file.write(proc.stdout)
