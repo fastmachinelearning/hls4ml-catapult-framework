@@ -108,6 +108,36 @@ def export_ip_vivado(solution_path: Path, ip_dest: Path, ip_name: str):
     return {} if proc_returncode == 0 else None
 
 
+def synthesis_oasys(solution_path: Path):
+    # Run the Catapult-generated Oasys-RTL synthesis script
+    synth = solution_path / 'concat_rtl.vhdl.or'
+
+    proc_returncode, report = run_cmd(['oasys',
+                                       '-echo',
+                                       str(synth),
+                                       '-nogui'],
+                                      name + '_rtl_synth',
+                                      cwd=solution_path)
+
+    if proc_returncode != 0:
+        return None
+    
+    # Parse the area report produced by Oasys-RTL
+    result = {}
+    lines = report.split('\n')
+
+    for i in range(len(lines) - 1, -1, -1):
+        line = lines[i]
+        area_match = re.search(
+            r'Downstream synthesis information:.*Area=([\d\.]+)', line,
+            flags=re.DOTALL)
+
+        if area_match:
+            result['area'] = area_match.group(1).strip()
+            break
+
+    return result
+    
 def get_rtl_activities(project_path: Path=None, tool: str=None):
     # Get tool-specific functions related to performing RTL (post-HLS)
     # activities. If the "tool" argument is not provided, the 02_libraries.tcl
@@ -121,6 +151,9 @@ def get_rtl_activities(project_path: Path=None, tool: str=None):
         'Vivado': {
             'synthesize': synthesis_vivado,
             'export-ip': export_ip_vivado
+        },
+        'OasysRTL': {
+            'synthesize': synthesis_oasys
         }
     }
 
@@ -350,8 +383,9 @@ if __name__ == "__main__":
 
                 if synth_results is not None:
                     print('OK')
-                    print(synth_results['slice_logic'])
-                    print(synth_results['dsp'])
+
+                    for value in synth_results.values():
+                        print(value)
                 else:
                     errors = True
                     print('FAIL', end='\n\n')

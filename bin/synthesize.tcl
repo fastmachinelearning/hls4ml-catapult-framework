@@ -69,7 +69,7 @@ if {$COMPILE_ONLY == 0} {
     # Run the fourth step of the Catapult flow, having set REGISTER_THRESHOLD to
     # a high value beforehand. Setting REGISTER_THRESHOLD is necessary for
     # models to be processed correctly without adding extra memory libraries.
-    directive set REGISTER_THRESHOLD 10240
+    directive set REGISTER_THRESHOLD 1024000
     source $PROJECT_PATH/tcl/03_assembly.tcl
     go assembly
 
@@ -87,6 +87,19 @@ if {$COMPILE_ONLY == 0} {
     # Run cosimulation using QuestaSIM.
     flow run /SCVerify/launch_make ./scverify/Verify_concat_sim_rtl_vhdl_msim.mk {} SIMTOOL=msim sim
 
-    # Print a timing report to be parsed by the 'synthesize' script.
-    solution report -timing true -transcript true
+    # Run power estimation if the target device is an ASIC. Otherwise,
+    # print a timing report to be parsed by the 'syntheize' script.
+    if {$RTL_SYN_TOOL == DesignCompiler || $RTL_SYN_TOOL == OasysRTL ||
+        $RTL_SYN_TOOL == RTLCompiler} {
+        flow package option set /LowPower/SWITCHING_ACTIVITY_TYPE saif
+        
+        go switching
+        flow run /PowerAnalysis/report_pre_pwropt_VHDL
+
+        # Print a timing and power report to be parsed by the 'synthesize'
+        # script.
+        solution report -timing true -transcript true -power_report true
+    } else {
+        solution report -timing true -transcript true
+    }
 }
