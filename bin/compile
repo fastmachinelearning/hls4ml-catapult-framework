@@ -96,15 +96,14 @@ if __name__ == "__main__":
         for entry in os.listdir('compile_logs'):
             os.remove(os.path.join('compile_logs', entry))
 
-    errors = False
-
     def nums_loop(i, buf):
         stream = StringIOWithPrint(print_stdout=not buf)
         name = f'Net{i}' if i != '0000' else 'EntireTemplate'
+        error = False
 
         if stress:
             if name == 'EntireTemplate':
-                return stream.getvalue()
+                return stream.getvalue(), error
 
             name = 'S' + name
         
@@ -149,7 +148,7 @@ if __name__ == "__main__":
             error_match = re.search('Error:.*make', proc.stdout)
 
             if error_match is not None:
-                errors = True
+                error = True
                 print('TEST FAIL', flush=True, file=stream)
 
                 if buf:
@@ -178,22 +177,36 @@ if __name__ == "__main__":
                 else:
                     print(f'OK (no testing run)', flush=True, file=stream)
         else:
-            errors = True
+            error = True
             print('COMPILE FAIL', flush=True, file=stream)
 
             if buf:
                 print(f'[stderr] {name}, COMPILE FAIL', file=sys.stderr)
 
-        return stream.getvalue()
+        return stream.getvalue(), error
+
+    errors = False
 
     if jobs == 1:
         for i in nums:
-            nums_loop(i, False)
+            _, error = nums_loop(i, False)
+
+            if error:
+                errors = True
     else:
         from joblib import Parallel, delayed
         results = Parallel(n_jobs=jobs, verbose=40)(delayed(nums_loop)(i, True)
                                                     for i in nums)
-        print(''.join(results))
+
+        to_print = ''
+
+        for result, error in results:
+            to_print += result
+
+            if error:
+                errors = True
+
+        print(to_print)
                 
     print()
 
