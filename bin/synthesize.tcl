@@ -89,8 +89,8 @@ if {$COMPILE_ONLY == 0} {
 
     # Run power estimation if the target device is an ASIC. Otherwise,
     # print a timing report to be parsed by the 'syntheize' script.
-    if {$RTL_SYN_TOOL == DesignCompiler || $RTL_SYN_TOOL == OasysRTL ||
-        $RTL_SYN_TOOL == RTLCompiler} {
+    if {$RTL_SYN_TOOL == "DesignCompiler" || $RTL_SYN_TOOL == "OasysRTL" ||
+        $RTL_SYN_TOOL == "RTLCompiler"} {
         flow package option set /LowPower/SWITCHING_ACTIVITY_TYPE saif
         
         go switching
