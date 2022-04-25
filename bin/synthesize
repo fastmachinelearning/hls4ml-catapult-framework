@@ -217,7 +217,7 @@ def synthesis_oasys(solution_path: Path, name: str):
     for i in range(len(lines) - 1, -1, -1):
         line = lines[i]
         area_match = re.search(
-            r'Downstream synthesis information:.*Area=([\d\.]+)', line,
+            r'Total Cell Area is ([\d\.]+)', line,
             flags=re.DOTALL)
 
         if area_match:
