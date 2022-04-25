@@ -11,7 +11,7 @@ namespace nnet{
 template<typename T, int N>
 T max(T x[N]){
   T y = x[0];
-  for(int i = 1; i < N; i++){
+  MaxLoop: for(int i = 1; i < N; i++){
     y = x[i] > y ? x[i] : y;
   }
   return y;
@@ -183,18 +183,18 @@ void pooling2d_cl(data_T data[CONFIG_T::in_height * CONFIG_T::in_width * CONFIG_
     padded_width -= padded_width - (padded_width / CONFIG_T::stride_width * CONFIG_T::stride_width);
   }
 
-  for(int ff = 0; ff < CONFIG_T::n_filt; ff++){
+  Loop1: for(int ff = 0; ff < CONFIG_T::n_filt; ff++){
 	  // Loop over input image y in steps of stride
-	  for(int ii = 0; ii < padded_height; ii += CONFIG_T::stride_height){
+	  Loop2: for(int ii = 0; ii < padded_height; ii += CONFIG_T::stride_height){
 		  // Loop over input image x in steps of stride
-		  for(int jj = 0; jj < padded_width; jj += CONFIG_T::stride_width){
+		  Loop3: for(int jj = 0; jj < padded_width; jj += CONFIG_T::stride_width){
 			  data_T pool[CONFIG_T::pool_height * CONFIG_T::pool_width];
         // Keep track of number of pixels in image vs padding region
         unsigned img_overlap = 0;
 			  // Loop over pool window y
-			  for(int kk = 0; kk < CONFIG_T::stride_height; kk++){
+			  Loop4: for(int kk = 0; kk < CONFIG_T::stride_height; kk++){
 				  // Loop over pool window x
-				  for(int ll = 0; ll < CONFIG_T::stride_width; ll++){
+				  Loop5: for(int ll = 0; ll < CONFIG_T::stride_width; ll++){
             if(ii+kk < CONFIG_T::pad_top || ii+kk >= (padded_height - CONFIG_T::pad_bottom) || jj+ll < CONFIG_T::pad_left || jj+ll >= (padded_width - CONFIG_T::pad_right)){
               // Add padding
               pool[kk * CONFIG_T::stride_width + ll] = pad_val<data_T, CONFIG_T::pool_op>();
