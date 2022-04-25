@@ -277,8 +277,8 @@ if __name__ == "__main__":
     # update the call below (e.g. the help message)
     parser.add_argument('nums', metavar='ID', type=str,
                         nargs='+', help='the IDs of projects to be processed, '
-                        'e.g. 1 2 3 will synthesise Net001, Net002 and '
-                        'Net003 respectively (put \'all\' if you want to '
+                        'e.g. 1 2 3 will synthesise Net0001, Net0002 and '
+                        'Net0003 respectively (put \'all\' if you want to '
                         'process all projects)')
 
     parser.add_argument('--stress', action='store_true', dest='stress',
@@ -377,7 +377,7 @@ if __name__ == "__main__":
     # Add leading zeroes to the provided project IDs if necessary
     for i in range(len(nums)):
         digit_count = len(re.search(r'(\d+)', nums[i]).group(1))
-        nums[i] = (3 - digit_count) * '0' + nums[i]
+        nums[i] = (4 - digit_count) * '0' + nums[i]
 
     # Prepare the 'synthesize_logs' directory
     if not os.path.exists('synthesize_logs'):
