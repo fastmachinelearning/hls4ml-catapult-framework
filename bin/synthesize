@@ -209,7 +209,7 @@ def synthesis_oasys(solution_path: Path):
 
     if proc_returncode != 0:
         return None
-    
+
     # Parse the area report produced by Oasys-RTL
     result = {}
     lines = report.split('\n')
@@ -225,7 +225,7 @@ def synthesis_oasys(solution_path: Path):
             break
 
     return result
-    
+
 def get_rtl_activities(project_path: Path=None, tool: str=None):
     # Get tool-specific functions related to performing RTL (post-HLS)
     # activities. If the "tool" argument is not provided, the 02_libraries.tcl
@@ -234,7 +234,7 @@ def get_rtl_activities(project_path: Path=None, tool: str=None):
     #
     # If None is returned, a detected/provided RTL synthesis tool is not
     # supported by 'synthesize'.
-    
+
     RTL_ACTIVITIES = {
         'Vivado': {
             'synthesize': synthesis_vivado,
@@ -252,9 +252,9 @@ def get_rtl_activities(project_path: Path=None, tool: str=None):
 
     if not tcl_libraries_path.exists():
         return None
-    
+
     tcl_libraries = ''
-    
+
     with tcl_libraries_path.open(mode='r') as f:
         for line in f:
             tcl_libraries += line
@@ -413,14 +413,14 @@ if __name__ == "__main__":
         synth_results = None
         impl_results = None
         export_ip_results = None
-        
+
         if proc_returncode == 0:
             # Parse the cosimulation results
             cosim_match = \
                 re.search(r'Info: scverify_top/user_tb: '
                           r'Simulation (PASSED|FAILED)',
                           proc_out)
-            
+
             if cosim_match is not None:
                 status = cosim_match.group(1)
 
