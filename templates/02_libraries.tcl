@@ -13,8 +13,8 @@ if {![info exists RTL_SYN_TOOL]} {
 
 solution library remove *
 
-if {$RTL_SYN_TOOL == DesignCompiler || $RTL_SYN_TOOL == OasysRTL ||
-    $RTL_SYN_TOOL == RTLCompiler} {
+if {$RTL_SYN_TOOL == "DesignCompiler" || $RTL_SYN_TOOL == "OasysRTL" ||
+    $RTL_SYN_TOOL == "RTLCompiler"} {
     if {![info exists ASIC_LIBRARY]} {
         set ASIC_LIBRARY nangate-45nm_beh
     }
