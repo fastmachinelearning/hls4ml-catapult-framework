@@ -293,6 +293,16 @@ if __name__ == "__main__":
                         dest='singularity', help='use the Singularity image '
                         'with Catapult (i.e. catapult.sif in "bin") instead of '
                         'the local installation')
+    parser.add_argument('--csv', action='store_true', dest='csv',
+                        help='do not print anything except for the HLS/RTL '
+                        'synthesis results in form of CSV lines (one per '
+                        'project)')
+    parser.add_argument('--jobs', metavar='INT', type=int, dest='jobs',
+                        default=1, help='the number of projects to be '
+                        'processed in parallel (default: 1, note: if the value '
+                        'is greater than 1, all outputs will be printed at the '
+                        'end except for errors, which will be printed '
+                        'instantaneously to STDERR)')
 
     rtl_group = parser.add_argument_group(title='arguments related to '
                                           'RTL (post-HLS) activities')
@@ -311,6 +321,9 @@ if __name__ == "__main__":
 
     # Parse --singularity
     singularity = args.singularity
+
+    # Parse --csv
+    csv = args.csv
 
     # Parse --settings
     if args.settings is None:
@@ -340,6 +353,9 @@ if __name__ == "__main__":
 
     # Parse --stress
     stress = args.stress
+
+    # Parse --jobs
+    jobs = args.jobs
 
     # Parse the provided project IDs
     nums = args.nums
