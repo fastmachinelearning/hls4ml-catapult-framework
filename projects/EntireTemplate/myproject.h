@@ -20,8 +20,8 @@ struct config : nnet::dense_config {
   typedef ac_fixed<11,3,true> bias_t;
   typedef ac_fixed<8,2,true> weight_t;
   typedef ac_int<1, false> index_t;
-  template<class x_T, class y_T, class res_T>
-  using product = nnet::product::mult<x_T, y_T, res_T>;
+  template<class x_T, class y_T>
+  using product = nnet::product::mult<x_T, y_T>;
 };
 
 struct config_cast {
@@ -49,8 +49,8 @@ struct config_batchnorm : nnet::batchnorm_config {
   static const bool store_weights_in_bram = false;
   typedef ac_fixed<5,2,true> bias_t;
   typedef ac_fixed<10,7,true> scale_t;
-  template<class x_T, class y_T, class res_T>
-  using product = nnet::product::mult<x_T, y_T, res_T>;
+  template<class x_T, class y_T>
+  using product = nnet::product::mult<x_T, y_T>;
 };
 
 struct config_merge : nnet::merge_config {
@@ -62,8 +62,8 @@ struct config_dot : nnet::dot_config {
   static const unsigned n_out = 10;
   static const unsigned reuse_factor = 3;
   typedef ac_fixed<25,12,true> accum_t;
-  template<class x_T, class y_T, class res_T>
-  using product = nnet::product::mult<x_T, y_T, res_T>;
+  template<class x_T, class y_T>
+  using product = nnet::product::mult<x_T, y_T>;
 };
 
 struct config_concat : nnet::concat_config {
@@ -225,11 +225,10 @@ namespace nnet {
 
   // nnet_mult.h
   namespace product {
-    template class Product<ac_t, ac_t, ac_t>;
-    template class both_binary<ac_t, ac_t, ac_t>;
-    template class weight_binary<ac_t, ac_t, ac_t>;
-    template class weight_ternary<ac_t, ac_t, ac_t>;
-    template class mult<ac_t, ac_t, ac_t>;
+    template class both_binary<ac_t, ac_t>;
+    template class weight_binary<ac_t, ac_t>;
+    template class weight_ternary<ac_t, ac_t>;
+    template class mult<ac_t, ac_t>;
     //template class weight_exponential<ac_t, ac_t, ac_t>;
   };
 

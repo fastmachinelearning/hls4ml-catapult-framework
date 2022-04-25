@@ -66,7 +66,7 @@ void dense_resource_rf_leq_nin(
         MultLoop:
         for (int im = 0; im < block_factor; im++) {
 
-            acc[out_index] += CONFIG_T::template product<data_T, typename CONFIG_T::weight_t, typename CONFIG_T::accum_t>::product(data[in_index], weights[w_index]);	
+            acc[out_index] += CONFIG_T::template product<data_T, typename CONFIG_T::weight_t>::product(data[in_index], weights[w_index]);
 
 
             // Increment w_index
@@ -142,7 +142,7 @@ void dense_resource_rf_gt_nin_rem0(
 
         MultLoop:
         for (int im = 0; im < block_factor; im++) {
-            acc[out_index] += CONFIG_T::template product<data_T, typename CONFIG_T::weight_t, typename CONFIG_T::accum_t>::product(data[in_index], weights[w_index]);
+            acc[out_index] += CONFIG_T::template product<data_T, typename CONFIG_T::weight_t>::product(data[in_index], weights[w_index]);
 
             w_index += rufactor;
             if (w_index >= CONFIG_T::n_in * CONFIG_T::n_out) break; // check out of bounds
@@ -198,7 +198,7 @@ void dense_resource_rf_gt_nin(
             int w_index = ir + rufactor * im;
             int in_index = w_index % nin;
             if (w_index >= CONFIG_T::n_in*CONFIG_T::n_out) continue; // check out of bounds
-            tmpmult[im] = CONFIG_T::template product<data_T, typename CONFIG_T::weight_t, typename CONFIG_T::accum_t>::product(data[in_index], weights[w_index]);
+            tmpmult[im] = CONFIG_T::template product<data_T, typename CONFIG_T::weight_t>::product(data[in_index], weights[w_index]);
         }
 
         typename CONFIG_T::accum_t mult[multiplier_limit];
