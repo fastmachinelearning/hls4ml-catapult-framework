@@ -4,7 +4,27 @@ import os
 import sys
 import re
 import argparse
+from io import StringIO
 from pathlib import Path
+
+
+class StringIOWithPrint(StringIO):
+    def __init__(self, print_stdout):
+        super().__init__()
+
+        self._print_stdout = print_stdout
+
+    def write(self, s):
+        if self._print_stdout:
+            sys.stdout.write(s)
+
+        return super().write(s)
+
+    def flush(self):
+        if self._print_stdout:
+            sys.stdout.flush()
+
+        super().flush()
 
 
 def run_cmd(command, log_file_name, cwd=None, env=None):
