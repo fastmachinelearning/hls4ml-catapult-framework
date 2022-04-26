@@ -131,27 +131,27 @@ def synthesis_vivado(solution_path: Path, name: str):
                                     power_report, flags=re.DOTALL)
     on_chip = on_chip_regex_match.group(1)
 
-    clocks_regex_match = re.search(r'Clocks[^\|]*\|\s*([\d\.]+)', on_chip,
+    clocks_regex_match = re.search(r'Clocks[^\|]*\|\s*([<>\d\.]+)', on_chip,
                                    flags=re.DOTALL)
     result['clocks_power'] = clocks_regex_match.group(1)
 
-    logic_regex_match = re.search(r'CLB Logic[^\|]*\|\s*([\d\.]+)', on_chip,
+    logic_regex_match = re.search(r'CLB Logic[^\|]*\|\s*([<>\d\.]+)', on_chip,
                                   flags=re.DOTALL)
     result['logic_power'] = logic_regex_match.group(1)
 
-    signals_regex_match = re.search(r'Signals[^\|]*\|\s*([\d\.]+)', on_chip,
+    signals_regex_match = re.search(r'Signals[^\|]*\|\s*([<>\d\.]+)', on_chip,
                                     flags=re.DOTALL)
     result['signals_power'] = signals_regex_match.group(1)
 
-    dsp_power_regex_match = re.search(r'DSPs[^\|]*\|\s*([\d\.]+)', on_chip,
+    dsp_power_regex_match = re.search(r'DSPs[^\|]*\|\s*([<>\d\.]+)', on_chip,
                                       flags=re.DOTALL)
     result['dsp_power'] = dsp_power_regex_match.group(1)
 
-    static_regex_match = re.search(r'Static Power[^\|]*\|\s*([\d\.]+)', on_chip,
-                                   flags=re.DOTALL)
+    static_regex_match = re.search(r'Static Power[^\|]*\|\s*([<>\d\.]+)',
+                                   on_chip, flags=re.DOTALL)
     result['static_power'] = static_regex_match.group(1)
 
-    total_regex_match = re.search(r'Total[^\|]*\|\s*([\d\.]+)', on_chip,
+    total_regex_match = re.search(r'Total[^\|]*\|\s*([<>\d\.]+)', on_chip,
                                   flags=re.DOTALL)
     result['total_power'] = total_regex_match.group(1)
 
