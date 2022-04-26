@@ -131,29 +131,35 @@ def synthesis_vivado(solution_path: Path, name: str):
                                     power_report, flags=re.DOTALL)
     on_chip = on_chip_regex_match.group(1)
 
-    clocks_regex_match = re.search(r'Clocks[^\|]*\|\s*([<>\d\.]+)', on_chip,
+    clocks_regex_match = re.search(r'Clocks[^\|]*\|\s*([^\s\|]+)\s*\|', on_chip,
                                    flags=re.DOTALL)
-    result['clocks_power'] = clocks_regex_match.group(1)
+    result['clocks_power'] = 'NA' if not clocks_regex_match \
+        else clocks_regex_match.group(1)
 
-    logic_regex_match = re.search(r'CLB Logic[^\|]*\|\s*([<>\d\.]+)', on_chip,
-                                  flags=re.DOTALL)
-    result['logic_power'] = logic_regex_match.group(1)
+    logic_regex_match = re.search(r'CLB Logic[^\|]*\|\s*([^\s\|]+)\s*\|',
+                                  on_chip, flags=re.DOTALL)
+    result['logic_power'] = 'NA' if not logic_regex_match \
+        else logic_regex_match.group(1)
 
-    signals_regex_match = re.search(r'Signals[^\|]*\|\s*([<>\d\.]+)', on_chip,
-                                    flags=re.DOTALL)
-    result['signals_power'] = signals_regex_match.group(1)
+    signals_regex_match = re.search(r'Signals[^\|]*\|\s*([^\s\|]+)\s*\|',
+                                    on_chip, flags=re.DOTALL)
+    result['signals_power'] = 'NA' if not signals_regex_match \
+        else signals_regex_match.group(1)
 
-    dsp_power_regex_match = re.search(r'DSPs[^\|]*\|\s*([<>\d\.]+)', on_chip,
+    dsp_power_regex_match = re.search(r'DSPs[^\|]*\|\s*([^\s\|]+)\s*\|', on_chip,
                                       flags=re.DOTALL)
-    result['dsp_power'] = dsp_power_regex_match.group(1)
+    result['dsp_power'] = 'NA' if not dsp_power_regex_match \
+        else dsp_power_regex_match.group(1)
 
-    static_regex_match = re.search(r'Static Power[^\|]*\|\s*([<>\d\.]+)',
+    static_regex_match = re.search(r'Static Power[^\|]*\|\s*([^\s\|]+)\s*\|',
                                    on_chip, flags=re.DOTALL)
-    result['static_power'] = static_regex_match.group(1)
+    result['static_power'] = 'NA' if not static_regex_match \
+        else static_regex_match.group(1)
 
-    total_regex_match = re.search(r'Total[^\|]*\|\s*([<>\d\.]+)', on_chip,
+    total_regex_match = re.search(r'Total[^\|]*\|\s*([^\s\|]+)\s*\|', on_chip,
                                   flags=re.DOTALL)
-    result['total_power'] = total_regex_match.group(1)
+    result['total_power'] = 'NA' if not total_regex_match \
+        else total_regex_match.group(1)
 
     return result
 
