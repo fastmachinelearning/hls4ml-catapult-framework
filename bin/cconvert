@@ -354,7 +354,7 @@ def get_bits_for_exp_and_inv(dest_path):
     # Get the data type for the exp table (exp_table_t)
     regex_exp = \
         re.search(r'typedef ac_fixed<(\d+)\s*,\s*(\d+)\s*,\s*true.*> '
-                  'softmaxexp_table_t', defines)
+                  r'\S*exp_table_t', defines)
 
     if regex_exp is None:
         exp_tuple = None
@@ -366,7 +366,7 @@ def get_bits_for_exp_and_inv(dest_path):
     # Get the data type for the inv table (inv_table_t)
     regex_inv = \
         re.search(r'typedef ac_fixed<(\d+)\s*,\s*(\d+)\s*,\s*true.*> '
-                  'softmaxinv_table_t', defines)
+                  r'\S*inv_table_t', defines)
 
     if regex_inv is None:
         inv_tuple = None
