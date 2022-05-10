@@ -111,8 +111,5 @@ If there is something you don't understand or you have a problem with using the 
 ### Known issues
 * At the cosimulation stage, the `latency` implementation of `Dense` returns incorrect results in some cases when II/RF (initiation interval / ReuseFactor) is greater than 1. Usually, only one or a few bits are wrong in the entire output bit pattern and the bug is more likely to appear for either larger `Dense` layers (i.e. with a greater number of neurons/calculations) or larger values of II/RF.
 
-## Contributing
-All contributions are welcome! Please fork the repository, make your changes and create a pull request.
-
 ## License
-(to be determined)
+To be determined. Until this is done, any usage of the files stored in this repository is **not** allowed without an explicit permission.
