@@ -572,18 +572,28 @@ if __name__ == "__main__":
 
             clk_regex_match = \
                 re.search(r'Info: scverify_top/Monitor: runs with constant '
-                          r'clock period ([\d\.]+) ns', proc_out)
+                          r'clock period ([\d\.]+) (ns|ps)', proc_out)
             throughput_regex_match = \
                 re.search(r'Info: scverify_top/Monitor: Throughput: ([\d\.]+) '
-                          r'transaction\S? per ([\d\.]+) ns', proc_out)
+                          r'transaction\S? per ([\d\.]+) (ns|ps)', proc_out)
             latency_regex_match = \
-                re.search(r'Info: scverify_top/Monitor: Latency: ([\d\.]+) ns',
+                re.search(r'Info: scverify_top/Monitor: Latency: ([\d\.]+) '
+                          r'(ns|ps)',
                           proc_out)
 
             clock = clk_regex_match.group(1)
             throughput = float(throughput_regex_match.group(2)) / \
                 float(throughput_regex_match.group(1))
             latency = latency_regex_match.group(1)
+
+            if clk_regex_match.group(2) == 'ps':
+                clock = str(float(clock) / 1000)
+
+            if throughput_regex_match.group(3) == 'ps':
+                throughput /= 1000
+
+            if latency_regex_match.group(2) == 'ps':
+                latency = str(float(latency) / 1000)
 
             if csv:
                 print(','.join(filter(lambda x: x is not None,
